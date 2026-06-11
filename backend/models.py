@@ -141,3 +141,34 @@ class MarketPrice(Base):
     retention_rate = Column(Float)
     price_trend = Column(String(20))
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ConsignmentOrder(Base):
+    __tablename__ = "consignment_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bag_id = Column(Integer, ForeignKey("bags.id"), nullable=False)
+    order_no = Column(String(50), unique=True, nullable=False)
+    platform = Column(String(100))
+    expected_price = Column(Float)
+    min_price = Column(Float)
+    commission_rate = Column(Float)
+    listing_copy = Column(Text)
+    accessory_completeness = Column(String(200))
+    defect_description = Column(Text)
+    purchase_proof_refs = Column(Text)
+    auth_image_refs = Column(Text)
+    report_refs = Column(Text)
+    status = Column(String(20), nullable=False, default="draft")
+    sold_price = Column(Float)
+    platform_commission = Column(Float)
+    actual_amount = Column(Float)
+    buyer_note = Column(Text)
+    sold_date = Column(Date)
+    listed_at = Column(DateTime)
+    negotiating_at = Column(DateTime)
+    sold_at = Column(DateTime)
+    delisted_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    bag = relationship("Bag")

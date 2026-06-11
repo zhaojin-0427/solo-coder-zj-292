@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle } from 'lucide-react'
-import { bagAPI, authAPI, maintenanceAPI, appraisalAPI } from '../api'
-import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus } from '../types'
+import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle, Store } from 'lucide-react'
+import { bagAPI, authAPI, maintenanceAPI, appraisalAPI, consignmentAPI } from '../api'
+import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus, ConsignmentOrderDetail, ConsignmentStatus } from '../types'
 import BagModal from '../components/BagModal'
 import MaintenanceModal from '../components/MaintenanceModal'
 import AppraisalModal from '../components/AppraisalModal'
+import ConsignmentModal from '../components/ConsignmentModal'
 
 const STATUS_MAP: Record<AppraisalStatus, { label: string; color: string; bg: string; icon: any }> = {
   pending_submit: { label: '待提交', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
@@ -13,6 +14,15 @@ const STATUS_MAP: Record<AppraisalStatus, { label: string; color: string; bg: st
   appraising: { label: '鉴定中', color: 'text-orange-600', bg: 'bg-orange-100', icon: Eye },
   reported: { label: '已出报告', color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
   cancelled: { label: '已取消', color: 'text-red-500', bg: 'bg-red-100', icon: XCircle },
+}
+
+const CONSIGNMENT_STATUS_MAP: Record<ConsignmentStatus, { label: string; color: string; bg: string; icon: any }> = {
+  draft: { label: '草稿', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
+  pending_review: { label: '待审核', color: 'text-blue-600', bg: 'bg-blue-100', icon: Eye },
+  listed: { label: '已上架', color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
+  negotiating: { label: '议价中', color: 'text-orange-600', bg: 'bg-orange-100', icon: Store },
+  sold: { label: '已成交', color: 'text-purple-600', bg: 'bg-purple-100', icon: CheckCircle2 },
+  delisted: { label: '已下架', color: 'text-red-500', bg: 'bg-red-100', icon: XCircle },
 }
 
 export default function BagDetail() {
@@ -23,10 +33,12 @@ export default function BagDetail() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
   const [showAppraisalModal, setShowAppraisalModal] = useState(false)
+  const [showConsignmentModal, setShowConsignmentModal] = useState(false)
   const [authResult, setAuthResult] = useState<AuthResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [appraisalOrders, setAppraisalOrders] = useState<AppraisalOrderDetail[]>([])
-  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal'>('info')
+  const [consignmentOrders, setConsignmentOrders] = useState<ConsignmentOrderDetail[]>([])
+  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal' | 'consignment'>('info')
 
   const loadBag = async () => {
     if (!id) return
@@ -51,9 +63,20 @@ export default function BagDetail() {
     }
   }
 
+  const loadConsignmentOrders = async () => {
+    if (!id) return
+    try {
+      const res = await consignmentAPI.getOrders({ bag_id: Number(id) })
+      setConsignmentOrders(res.data)
+    } catch (error) {
+      console.error('加载寄售记录失败', error)
+    }
+  }
+
   useEffect(() => {
     loadBag()
     loadAppraisalOrders()
+    loadConsignmentOrders()
   }, [id])
 
   const handleDelete = async () => {
@@ -154,6 +177,7 @@ export default function BagDetail() {
           { key: 'info', label: '基本信息', icon: FileText },
           { key: 'auth', label: '鉴定记录', icon: ShieldCheck },
           { key: 'appraisal', label: '鉴定委托', icon: FileBadge },
+          { key: 'consignment', label: '寄售管理', icon: Store },
           { key: 'maintenance', label: '保养记录', icon: Wrench },
         ].map((tab) => {
           const Icon = tab.icon
@@ -427,6 +451,92 @@ export default function BagDetail() {
         </div>
       )}
 
+      {activeTab === 'consignment' && bag && (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowConsignmentModal(true)}
+              className="flex items-center gap-2 px-4 py-2 luxury-gradient text-white rounded-lg text-sm hover:opacity-90"
+            >
+              <Plus className="w-4 h-4" />
+              创建寄售单
+            </button>
+          </div>
+
+          {consignmentOrders.length === 0 ? (
+            <div className="bg-white rounded-xl p-12 text-center card-shadow">
+              <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm mb-4">暂无寄售记录</p>
+              <p className="text-xs text-gray-400 mb-4">
+                一键创建寄售单，自动复用包包基础信息、购买凭证、鉴定点照片
+              </p>
+              <button
+                onClick={() => setShowConsignmentModal(true)}
+                className="px-4 py-2 text-sm text-luxury-gold border border-luxury-gold rounded-lg hover:bg-luxury-gold hover:text-white transition-colors"
+              >
+                立即创建寄售单
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {consignmentOrders.map((cOrder) => {
+                const cStatusInfo = CONSIGNMENT_STATUS_MAP[cOrder.status]
+                const CStatusIcon = cStatusInfo.icon
+                return (
+                  <div
+                    key={cOrder.id}
+                    className="bg-white rounded-xl p-4 card-shadow cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/consignments/${cOrder.id}`)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 ${cStatusInfo.bg} rounded-full flex items-center justify-center`}>
+                          <CStatusIcon className={`w-5 h-5 ${cStatusInfo.color}`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{cOrder.order_no}</p>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            平台：{cOrder.platform || '未指定'}
+                            {cOrder.expected_price && ` · 期望价：¥${cOrder.expected_price.toLocaleString()}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${cStatusInfo.bg} ${cStatusInfo.color}`}>
+                          <CStatusIcon className="w-3 h-3" />
+                          {cStatusInfo.label}
+                        </span>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {cOrder.created_at.slice(0, 16).replace('T', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                    {cOrder.status === 'sold' && cOrder.sold_price && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-500">成交价：</span>
+                          <span className="font-medium text-purple-600">¥{cOrder.sold_price.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">平台佣金：</span>
+                          <span className="text-gray-800">¥{cOrder.platform_commission?.toLocaleString() || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">实际到手：</span>
+                          <span className="font-medium text-luxury-gold">¥{cOrder.actual_amount?.toLocaleString() || '-'}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'appraisal' && bag && (
         <div className="space-y-6">
           <div className="flex justify-end">
@@ -554,6 +664,19 @@ export default function BagDetail() {
             loadAppraisalOrders()
             alert('委托申请已创建，可在委托详情中提交')
             navigate(`/appraisals/${orderId}`)
+          }}
+        />
+      )}
+
+      {showConsignmentModal && bag && (
+        <ConsignmentModal
+          bag={bag}
+          onClose={() => setShowConsignmentModal(false)}
+          onSuccess={(orderId) => {
+            setShowConsignmentModal(false)
+            loadConsignmentOrders()
+            alert('寄售单已创建')
+            navigate(`/consignments/${orderId}`)
           }}
         />
       )}

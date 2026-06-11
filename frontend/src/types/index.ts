@@ -69,19 +69,6 @@ export interface MarketPrice {
   updated_at: string
 }
 
-export interface StatsData {
-  total_bags: number
-  total_brands: number
-  total_maintenance_cost: number
-  total_purchase_price: number
-  maintenance_cost_ratio: number
-  avg_retention_rate: number
-  brand_distribution: { brand: string; count: number }[]
-  maintenance_cost_by_type: { type: string; count: number; total_cost: number }[]
-  common_problem_parts: { part: string; count: number; issues: string[] }[]
-  value_retention_period: { period: string; avg_retention: number }[]
-}
-
 export interface AuthResult {
   score: number
   level: string
@@ -135,6 +122,40 @@ export interface BrandRiskData {
   risk_ratio: number
 }
 
+export type ConsignmentStatus = 'draft' | 'pending_review' | 'listed' | 'negotiating' | 'sold' | 'delisted'
+
+export interface ConsignmentOrder {
+  id: number
+  bag_id: number
+  order_no: string
+  platform?: string
+  expected_price?: number
+  min_price?: number
+  commission_rate?: number
+  listing_copy?: string
+  accessory_completeness?: string
+  defect_description?: string
+  purchase_proof_refs?: string
+  auth_image_refs?: string
+  report_refs?: string
+  status: ConsignmentStatus
+  sold_price?: number
+  platform_commission?: number
+  actual_amount?: number
+  buyer_note?: string
+  sold_date?: string
+  listed_at?: string
+  negotiating_at?: string
+  sold_at?: string
+  delisted_at?: string
+  created_at: string
+}
+
+export interface ConsignmentOrderDetail extends ConsignmentOrder {
+  bag_brand?: string
+  bag_model?: string
+}
+
 export interface StatsData {
   total_bags: number
   total_brands: number
@@ -149,4 +170,9 @@ export interface StatsData {
   total_appraisal_orders: number
   avg_report_days: number
   brand_risk_distribution: BrandRiskData[]
+  total_consignments: number
+  consignment_sell_rate: number
+  avg_sell_cycle: number
+  avg_price_reduction: number
+  platform_revenue_distribution: { platform: string; amount: number }[]
 }

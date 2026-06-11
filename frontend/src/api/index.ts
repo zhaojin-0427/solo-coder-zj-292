@@ -88,4 +88,42 @@ export const appraisalAPI = {
   deleteOrder: (id: number) => api.delete(`/appraisals/${id}`),
 }
 
+export const consignmentAPI = {
+  getOrders: (params?: { bag_id?: number; status?: string }) =>
+    api.get('/consignments', { params }),
+  getOrder: (id: number) => api.get(`/consignments/${id}`),
+  createOrder: (data: {
+    bag_id: number
+    platform?: string
+    expected_price?: number
+    min_price?: number
+    commission_rate?: number
+    listing_copy?: string
+    accessory_completeness?: string
+    defect_description?: string
+    purchase_proof_refs?: string
+    auth_image_refs?: string
+    report_refs?: string
+  }) => api.post('/consignments', data),
+  updateOrder: (id: number, data: {
+    platform?: string
+    expected_price?: number
+    min_price?: number
+    commission_rate?: number
+    listing_copy?: string
+    accessory_completeness?: string
+    defect_description?: string
+  }) => api.put(`/consignments/${id}`, data),
+  updateStatus: (id: number, data: { status: string }) =>
+    api.patch(`/consignments/${id}/status`, data),
+  updateTransaction: (id: number, data: {
+    sold_price: number
+    platform_commission?: number
+    actual_amount?: number
+    buyer_note?: string
+    sold_date?: string
+  }) => api.patch(`/consignments/${id}/transaction`, data),
+  deleteOrder: (id: number) => api.delete(`/consignments/${id}`),
+}
+
 export default api

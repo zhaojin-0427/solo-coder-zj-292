@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Package, ShieldCheck, Wrench, TrendingUp, BarChart3, FileBadge } from 'lucide-react'
+import { Package, ShieldCheck, Wrench, TrendingUp, BarChart3, FileBadge, Store } from 'lucide-react'
 
 const navItems = [
   { path: '/', label: '包包档案', icon: Package },
   { path: '/auth-guide', label: '鉴定指引', icon: ShieldCheck },
   { path: '/appraisals', label: '鉴定委托', icon: FileBadge },
+  { path: '/consignments', label: '寄售管理', icon: Store },
   { path: '/maintenance', label: '保养记录', icon: Wrench },
   { path: '/market', label: '行情追踪', icon: TrendingUp },
   { path: '/stats', label: '数据统计', icon: BarChart3 },
@@ -36,7 +37,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               const Icon = item.icon
               const isActive = location.pathname === item.path ||
                 (item.path === '/' && location.pathname.startsWith('/bags/')) ||
-                (item.path === '/appraisals' && location.pathname.startsWith('/appraisals/'))
+                (item.path === '/appraisals' && location.pathname.startsWith('/appraisals/')) ||
+                (item.path === '/consignments' && location.pathname.startsWith('/consignments/'))
               return (
                 <Link
                   key={item.path}

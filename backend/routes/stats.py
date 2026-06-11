@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import func
 
 from database import get_db
-from models import Bag, MaintenanceRecord, BrandFeature, MarketPrice, AppraisalOrder
+from models import Bag, MaintenanceRecord, BrandFeature, MarketPrice, AppraisalOrder, ConsignmentOrder
 
 router = APIRouter(prefix="/api", tags=["行情与统计"])
 
@@ -121,6 +121,47 @@ def get_stats(db: Session = Depends(get_db)):
         brand_risk_distribution, key=lambda x: x["risk_ratio"], reverse=True
     )
 
+    total_consignments = db.query(func.count(ConsignmentOrder.id)).scalar() or 0
+    sold_consignments = db.query(func.count(ConsignmentOrder.id)).filter(
+        ConsignmentOrder.status == "sold"
+    ).scalar() or 0
+    consignment_sell_rate = round(sold_consignments / total_consignments * 100, 1) if total_consignments > 0 else 0
+
+    sold_orders_with_dates = db.query(ConsignmentOrder).filter(
+        ConsignmentOrder.status == "sold",
+        ConsignmentOrder.listed_at.isnot(None),
+        ConsignmentOrder.sold_at.isnot(None)
+    ).all()
+    avg_sell_cycle = 0.0
+    if sold_orders_with_dates:
+        total_days = 0
+        for o in sold_orders_with_dates:
+            delta = o.sold_at - o.listed_at
+            total_days += delta.total_seconds() / 86400
+        avg_sell_cycle = round(total_days / len(sold_orders_with_dates), 1)
+
+    sold_with_prices = db.query(ConsignmentOrder).filter(
+        ConsignmentOrder.status == "sold",
+        ConsignmentOrder.expected_price.isnot(None),
+        ConsignmentOrder.sold_price.isnot(None)
+    ).all()
+    avg_price_reduction = 0.0
+    if sold_with_prices:
+        reductions = [(o.expected_price - o.sold_price) / o.expected_price * 100 for o in sold_with_prices if o.expected_price > 0]
+        avg_price_reduction = round(sum(reductions) / len(reductions), 1) if reductions else 0
+
+    platform_revenue = db.query(
+        ConsignmentOrder.platform,
+        func.sum(ConsignmentOrder.sold_price)
+    ).filter(
+        ConsignmentOrder.status == "sold",
+        ConsignmentOrder.sold_price.isnot(None)
+    ).group_by(ConsignmentOrder.platform).all()
+    platform_revenue_distribution = [
+        {"platform": p or "未指定", "amount": a or 0}
+        for p, a in sorted(platform_revenue, key=lambda x: x[1] or 0, reverse=True)
+    ]
+
     return {
         "total_bags": total_bags,
         "total_brands": total_brands,
@@ -135,4 +176,9 @@ def get_stats(db: Session = Depends(get_db)):
         "total_appraisal_orders": total_appraisal_orders,
         "avg_report_days": avg_report_days,
         "brand_risk_distribution": brand_risk_distribution,
+        "total_consignments": total_consignments,
+        "consignment_sell_rate": consignment_sell_rate,
+        "avg_sell_cycle": avg_sell_cycle,
+        "avg_price_reduction": avg_price_reduction,
+        "platform_revenue_distribution": platform_revenue_distribution,
     }

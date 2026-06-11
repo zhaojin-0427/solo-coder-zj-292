@@ -215,3 +215,74 @@ class AppraisalOrderResponse(BaseModel):
 class AppraisalOrderDetailResponse(AppraisalOrderResponse):
     bag_brand: Optional[str] = None
     bag_model: Optional[str] = None
+
+
+class ConsignmentOrderCreate(BaseModel):
+    bag_id: int
+    platform: Optional[str] = None
+    expected_price: Optional[float] = None
+    min_price: Optional[float] = None
+    commission_rate: Optional[float] = None
+    listing_copy: Optional[str] = None
+    accessory_completeness: Optional[str] = None
+    defect_description: Optional[str] = None
+    purchase_proof_refs: Optional[str] = None
+    auth_image_refs: Optional[str] = None
+    report_refs: Optional[str] = None
+
+
+class ConsignmentOrderUpdate(BaseModel):
+    platform: Optional[str] = None
+    expected_price: Optional[float] = None
+    min_price: Optional[float] = None
+    commission_rate: Optional[float] = None
+    listing_copy: Optional[str] = None
+    accessory_completeness: Optional[str] = None
+    defect_description: Optional[str] = None
+
+
+class ConsignmentStatusUpdate(BaseModel):
+    status: str
+
+
+class ConsignmentTransactionUpdate(BaseModel):
+    sold_price: float
+    platform_commission: Optional[float] = None
+    actual_amount: Optional[float] = None
+    buyer_note: Optional[str] = None
+    sold_date: Optional[date] = None
+
+
+class ConsignmentOrderResponse(BaseModel):
+    id: int
+    bag_id: int
+    order_no: str
+    platform: Optional[str] = None
+    expected_price: Optional[float] = None
+    min_price: Optional[float] = None
+    commission_rate: Optional[float] = None
+    listing_copy: Optional[str] = None
+    accessory_completeness: Optional[str] = None
+    defect_description: Optional[str] = None
+    purchase_proof_refs: Optional[str] = None
+    auth_image_refs: Optional[str] = None
+    report_refs: Optional[str] = None
+    status: str
+    sold_price: Optional[float] = None
+    platform_commission: Optional[float] = None
+    actual_amount: Optional[float] = None
+    buyer_note: Optional[str] = None
+    sold_date: Optional[date] = None
+    listed_at: Optional[datetime] = None
+    negotiating_at: Optional[datetime] = None
+    sold_at: Optional[datetime] = None
+    delisted_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ConsignmentOrderDetailResponse(ConsignmentOrderResponse):
+    bag_brand: Optional[str] = None
+    bag_model: Optional[str] = None

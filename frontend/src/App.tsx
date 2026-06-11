@@ -8,6 +8,8 @@ import Market from './pages/Market'
 import Statistics from './pages/Statistics'
 import AppraisalList from './pages/AppraisalList'
 import AppraisalDetail from './pages/AppraisalDetail'
+import ConsignmentList from './pages/ConsignmentList'
+import ConsignmentDetail from './pages/ConsignmentDetail'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/stats" element={<Statistics />} />
         <Route path="/appraisals" element={<AppraisalList />} />
         <Route path="/appraisals/:id" element={<AppraisalDetail />} />
+        <Route path="/consignments" element={<ConsignmentList />} />
+        <Route path="/consignments/:id" element={<ConsignmentDetail />} />
       </Routes>
     </Layout>
   )

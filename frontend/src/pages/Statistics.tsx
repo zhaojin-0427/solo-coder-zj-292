@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert } from 'lucide-react'
+import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert, Store, Percent, Calendar, ArrowDownToLine } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, LineChart, Line
@@ -395,6 +395,154 @@ export default function Statistics() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-luxury-black flex items-center gap-3 mb-4">
+          <Store className="w-6 h-6 text-luxury-gold" />
+          寄售数据统计
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-luxury-gold">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">寄售总数</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.total_consignments}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+              <Store className="w-6 h-6 text-amber-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-purple-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">成交率</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.consignment_sell_rate}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <Percent className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">平均成交周期</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.avg_sell_cycle} <span className="text-base font-normal text-gray-500">天</span>
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-orange-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">平均让价幅度</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.avg_price_reduction}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">各平台成交金额</p>
+              <p className="text-lg font-bold text-gray-800 mt-1">
+                {stats.platform_revenue_distribution.length} 个平台
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <ArrowDownToLine className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {stats.platform_revenue_distribution.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4">各平台成交金额占比</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={stats.platform_revenue_distribution.map(p => ({
+                    name: p.platform,
+                    value: p.amount
+                  }))}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {stats.platform_revenue_distribution.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => [`¥${value.toLocaleString()}`, '成交金额']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4">各平台成交金额明细</h3>
+            <div className="space-y-4">
+              {stats.platform_revenue_distribution.map((item, index) => {
+                const total = stats.platform_revenue_distribution.reduce((s, i) => s + i.amount, 0)
+                const percent = total > 0 ? (item.amount / total * 100).toFixed(1) : '0'
+                return (
+                  <div key={item.platform}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm text-gray-700 flex items-center gap-2">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white font-medium ${
+                          index === 0 ? 'bg-luxury-gold' :
+                          index === 1 ? 'bg-amber-500' :
+                          index === 2 ? 'bg-yellow-500' : 'bg-gray-400'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        {item.platform}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{percent}%</span>
+                        <span className="text-sm font-bold text-gray-800">
+                          ¥{item.amount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-luxury-gold to-luxury-goldDark rounded-full transition-all"
+                        style={{ width: `${Number(percent)}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
