@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #F5F1EA;
+  color: #1A1A1A;
+}
+
+.luxury-gradient {
+  background: linear-gradient(135deg, #C9A962 0%, #A88B3D 100%);
+}
+
+.card-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.gold-text {
+  color: #C9A962;
+}
