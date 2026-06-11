@@ -468,7 +468,7 @@ export default function BagDetail() {
               <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 text-sm mb-4">暂无寄售记录</p>
               <p className="text-xs text-gray-400 mb-4">
-                一键创建寄售单，自动复用包包基础信息、购买凭证、鉴定点照片
+                一键创建寄售单，自动复用包包基础信息、购买凭证、鉴定点照片和专业鉴定报告
               </p>
               <button
                 onClick={() => setShowConsignmentModal(true)}
@@ -671,6 +671,7 @@ export default function BagDetail() {
       {showConsignmentModal && bag && (
         <ConsignmentModal
           bag={bag}
+          appraisalOrders={appraisalOrders}
           onClose={() => setShowConsignmentModal(false)}
           onSuccess={(orderId) => {
             setShowConsignmentModal(false)

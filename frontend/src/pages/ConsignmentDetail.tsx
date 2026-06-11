@@ -3,10 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Store, Clock, CheckCircle2, Eye, XCircle,
   DollarSign, MessageSquare, Package, Camera, Image as ImageIcon,
-  Trash2, Edit3, ArrowDownToLine, TrendingDown, FileText, Tag
+  Trash2, Edit3, ArrowDownToLine, TrendingDown, FileText, Tag, FileBadge
 } from 'lucide-react'
-import { consignmentAPI, bagAPI } from '../api'
-import { ConsignmentOrderDetail, ConsignmentStatus, BagDetail as BagDetailType } from '../types'
+import { consignmentAPI, bagAPI, appraisalAPI } from '../api'
+import { ConsignmentOrderDetail, ConsignmentStatus, BagDetail as BagDetailType, AppraisalOrderDetail } from '../types'
 
 const STATUS_MAP: Record<ConsignmentStatus, { label: string; color: string; bg: string; icon: any; desc: string }> = {
   draft: { label: '草稿', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock, desc: '寄售单已创建，等待提交审核' },
@@ -24,6 +24,7 @@ export default function ConsignmentDetail() {
   const navigate = useNavigate()
   const [order, setOrder] = useState<ConsignmentOrderDetail | null>(null)
   const [bag, setBag] = useState<BagDetailType | null>(null)
+  const [appraisalOrders, setAppraisalOrders] = useState<AppraisalOrderDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [showTransactionForm, setShowTransactionForm] = useState(false)
@@ -48,6 +49,12 @@ export default function ConsignmentDetail() {
           setBag(bagRes.data)
         } catch (e) {
           console.error('加载关联包包失败', e)
+        }
+        try {
+          const appraisalRes = await appraisalAPI.getOrders({ bag_id: orderData.bag_id })
+          setAppraisalOrders(appraisalRes.data)
+        } catch (e) {
+          console.error('加载鉴定报告失败', e)
         }
       }
     } catch (error) {
@@ -478,12 +485,43 @@ export default function ConsignmentDetail() {
                     </div>
                   )}
                 </div>
+                {appraisalOrders.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      专业鉴定报告
+                      <span className="ml-2 text-xs text-gray-400">
+                        {appraisalOrders.filter(o => o.status === 'reported').length} 份
+                      </span>
+                    </p>
+                    <div className="space-y-2">
+                      {appraisalOrders.filter(o => o.status === 'reported').map((report) => (
+                        <div
+                          key={report.id}
+                          className="flex items-center gap-3 p-3 bg-luxury-cream rounded-lg border border-luxury-gold/20 cursor-pointer hover:bg-luxury-gold/10 transition-colors"
+                          onClick={() => navigate(`/appraisals/${report.id}`)}
+                        >
+                          <div className="w-10 h-10 bg-luxury-gold/20 rounded-lg flex items-center justify-center">
+                            <FileBadge className="w-5 h-5 text-luxury-gold" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{report.order_no}</p>
+                            <p className="text-xs text-gray-500">
+                              {report.report_agency || '专业鉴定机构'} · {report.report_score !== undefined ? `${report.report_score}分` : ''}
+                            </p>
+                          </div>
+                          <span className="text-xs text-luxury-gold">查看 →</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-3 text-sm">
                 {(() => {
                   const purchaseCount = order.purchase_proof_refs ? order.purchase_proof_refs.split(',').length : 0
                   const authCount = order.auth_image_refs ? order.auth_image_refs.split(',').length : 0
+                  const reportCount = order.report_refs ? order.report_refs.split(',').length : 0
                   return (
                     <>
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
@@ -495,6 +533,12 @@ export default function ConsignmentDetail() {
                       <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <span className="text-gray-600">鉴定照片</span>
                         <span className="font-medium text-green-600">{authCount} 张</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-600">专业鉴定报告</span>
+                        <span className={"font-medium " + (reportCount > 0 ? 'text-green-600' : 'text-gray-400')}>
+                          {reportCount > 0 ? reportCount + ' 份' : '未上传'}
+                        </span>
                       </div>
                     </>
                   )

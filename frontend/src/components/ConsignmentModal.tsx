@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { X, Check, AlertTriangle, Clock } from 'lucide-react'
+import { X, Check, AlertTriangle, Clock, FileBadge } from 'lucide-react'
 import { consignmentAPI } from '../api'
-import { BagDetail as BagDetailType } from '../types'
+import { BagDetail as BagDetailType, AppraisalOrderDetail } from '../types'
 
 const PLATFORMS = [
   '闲鱼',
@@ -28,11 +28,12 @@ const ACCESSORY_OPTIONS = [
 
 interface ConsignmentModalProps {
   bag: BagDetailType
+  appraisalOrders: AppraisalOrderDetail[]
   onClose: () => void
   onSuccess: (orderId: number) => void
 }
 
-export default function ConsignmentModal({ bag, onClose, onSuccess }: ConsignmentModalProps) {
+export default function ConsignmentModal({ bag, appraisalOrders, onClose, onSuccess }: ConsignmentModalProps) {
   const [formData, setFormData] = useState({
     platform: '',
     expected_price: '',
@@ -47,7 +48,7 @@ export default function ConsignmentModal({ bag, onClose, onSuccess }: Consignmen
 
   const hasPurchaseProof = bag.purchase_proof_images.length > 0
   const hasAuthImages = bag.authentication_images.length > 0
-  const appraisalOrders = [] as any[]
+  const hasAppraisalReport = appraisalOrders.some(o => o.status === 'reported' && o.report_pdf_path)
 
   const toggleAccessory = (item: string) => {
     setAccessories(prev =>
@@ -57,6 +58,10 @@ export default function ConsignmentModal({ bag, onClose, onSuccess }: Consignmen
 
   const purchaseRefs = bag.purchase_proof_images.map(img => img.id).join(',')
   const authRefs = bag.authentication_images.map(img => img.id).join(',')
+  const reportRefs = appraisalOrders
+    .filter(o => o.status === 'reported' && o.report_pdf_path)
+    .map(o => o.id)
+    .join(',')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,7 +78,7 @@ export default function ConsignmentModal({ bag, onClose, onSuccess }: Consignmen
         defect_description: formData.defect_description || undefined,
         purchase_proof_refs: purchaseRefs || undefined,
         auth_image_refs: authRefs || undefined,
-        report_refs: undefined,
+        report_refs: reportRefs || undefined,
       })
       onSuccess(res.data.id)
     } catch (error: any) {
@@ -122,6 +127,16 @@ export default function ConsignmentModal({ bag, onClose, onSuccess }: Consignmen
                 )}
                 <span className={hasAuthImages ? 'text-gray-700' : 'text-yellow-600'}>
                   鉴定点照片 ({bag.authentication_images.length}张) - 将自动关联
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasAppraisalReport ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                )}
+                <span className={hasAppraisalReport ? 'text-gray-700' : 'text-yellow-600'}>
+                  专业鉴定报告 ({appraisalOrders.filter(o => o.status === 'reported').length}份) - 将自动关联
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -235,6 +250,7 @@ export default function ConsignmentModal({ bag, onClose, onSuccess }: Consignmen
               <p>📋 本次将自动关联以下资料：</p>
               <p className="ml-4">• 购买凭证：{bag.purchase_proof_images.length} 张</p>
               <p className="ml-4">• 鉴定照片：{bag.authentication_images.length} 张</p>
+              <p className="ml-4">• 专业鉴定报告：{appraisalOrders.filter(o => o.status === 'reported').length} 份</p>
               <p className="ml-4">• 包包基础信息：{bag.brand} {bag.model} ({bag.color || '颜色未记录'} / {bag.condition || '成色未记录'})</p>
             </div>
           </form>
