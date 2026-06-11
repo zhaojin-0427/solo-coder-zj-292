@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle, Store, TrendingUp, Settings, BarChart3 } from 'lucide-react'
-import { bagAPI, authAPI, maintenanceAPI, appraisalAPI, consignmentAPI, valueMonitorAPI } from '../api'
-import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus, ConsignmentOrderDetail, ConsignmentStatus, ValueMonitor, ValueAnalysis } from '../types'
+import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle, Store, TrendingUp, Settings, BarChart3, Shield, FileWarning } from 'lucide-react'
+import { bagAPI, authAPI, maintenanceAPI, appraisalAPI, consignmentAPI, valueMonitorAPI, insuranceAPI } from '../api'
+import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus, ConsignmentOrderDetail, ConsignmentStatus, ValueMonitor, ValueAnalysis, InsurancePolicy, ClaimEvent, ClaimStatus, InsuranceValuation } from '../types'
 import BagModal from '../components/BagModal'
 import MaintenanceModal from '../components/MaintenanceModal'
 import AppraisalModal from '../components/AppraisalModal'
 import ConsignmentModal from '../components/ConsignmentModal'
 import ValueMonitorModal from '../components/ValueMonitorModal'
+import InsuranceModal from '../components/InsuranceModal'
+import ClaimModal from '../components/ClaimModal'
 
 const STATUS_MAP: Record<AppraisalStatus, { label: string; color: string; bg: string; icon: any }> = {
   pending_submit: { label: '待提交', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
@@ -36,6 +38,22 @@ const STATUS_COLOR_MAP: Record<string, { bg: string; text: string; border: strin
   gray: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200' },
 }
 
+const INSURANCE_STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  active: { label: '保障中', color: 'text-green-600', bg: 'bg-green-100' },
+  expired: { label: '已过期', color: 'text-gray-500', bg: 'bg-gray-100' },
+  cancelled: { label: '已取消', color: 'text-red-500', bg: 'bg-red-100' },
+  pending: { label: '待生效', color: 'text-yellow-600', bg: 'bg-yellow-100' },
+}
+
+const CLAIM_STATUS_MAP: Record<ClaimStatus, { label: string; color: string; bg: string; icon: any }> = {
+  pending_submit: { label: '待提交', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
+  under_review: { label: '审核中', color: 'text-blue-600', bg: 'bg-blue-100', icon: Eye },
+  needs_material: { label: '需补充材料', color: 'text-orange-600', bg: 'bg-orange-100', icon: AlertCircle },
+  paid: { label: '已赔付', color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
+  rejected: { label: '已拒赔', color: 'text-red-500', bg: 'bg-red-100', icon: XCircle },
+  cancelled: { label: '已撤销', color: 'text-gray-500', bg: 'bg-gray-100', icon: XCircle },
+}
+
 export default function BagDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -52,7 +70,15 @@ export default function BagDetail() {
   const [consignmentOrders, setConsignmentOrders] = useState<ConsignmentOrderDetail[]>([])
   const [valueMonitor, setValueMonitor] = useState<ValueMonitor | null>(null)
   const [valueAnalysis, setValueAnalysis] = useState<ValueAnalysis | null>(null)
-  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal' | 'consignment' | 'value'>('info')
+  const [insurancePolicies, setInsurancePolicies] = useState<InsurancePolicy[]>([])
+  const [claims, setClaims] = useState<ClaimEvent[]>([])
+  const [insuranceValuation, setInsuranceValuation] = useState<InsuranceValuation | null>(null)
+  const [showInsuranceModal, setShowInsuranceModal] = useState(false)
+  const [showClaimModal, setShowClaimModal] = useState(false)
+  const [editingInsurance, setEditingInsurance] = useState<InsurancePolicy | null>(null)
+  const [editingClaim, setEditingClaim] = useState<ClaimEvent | null>(null)
+  const [selectedPolicyForClaim, setSelectedPolicyForClaim] = useState<InsurancePolicy | null>(null)
+  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal' | 'consignment' | 'value' | 'insurance'>('info')
 
   const loadBag = async () => {
     if (!id) return
@@ -107,12 +133,45 @@ export default function BagDetail() {
     }
   }
 
+  const loadInsurancePolicies = async () => {
+    if (!id) return
+    try {
+      const res = await insuranceAPI.getPolicies({ bag_id: Number(id) })
+      setInsurancePolicies(res.data)
+    } catch (error) {
+      console.error('加载保险档案失败', error)
+    }
+  }
+
+  const loadClaims = async () => {
+    if (!id) return
+    try {
+      const res = await insuranceAPI.getClaims({ bag_id: Number(id) })
+      setClaims(res.data)
+    } catch (error) {
+      console.error('加载理赔记录失败', error)
+    }
+  }
+
+  const loadInsuranceValuation = async () => {
+    if (!id) return
+    try {
+      const res = await insuranceAPI.getValuation(Number(id))
+      setInsuranceValuation(res.data)
+    } catch (error) {
+      console.error('加载保险估值分析失败', error)
+    }
+  }
+
   useEffect(() => {
     loadBag()
     loadAppraisalOrders()
     loadConsignmentOrders()
     loadValueMonitor()
     loadValueAnalysis()
+    loadInsurancePolicies()
+    loadClaims()
+    loadInsuranceValuation()
   }, [id])
 
   const handleDelete = async () => {
@@ -216,6 +275,7 @@ export default function BagDetail() {
           { key: 'consignment', label: '寄售管理', icon: Store },
           { key: 'maintenance', label: '保养记录', icon: Wrench },
           { key: 'value', label: '保值监控', icon: TrendingUp },
+          { key: 'insurance', label: '保险理赔', icon: Shield },
         ].map((tab) => {
           const Icon = tab.icon
           return (
@@ -814,6 +874,189 @@ export default function BagDetail() {
         </div>
       )}
 
+      {activeTab === 'insurance' && bag && (
+        <div className="space-y-6">
+          <div className="flex justify-end gap-2">
+            {insurancePolicies.length > 0 && (
+              <button
+                onClick={() => {
+                  const activePolicy = insurancePolicies.find(p => p.status === 'active') || insurancePolicies[0]
+                  setSelectedPolicyForClaim(activePolicy)
+                  setEditingClaim(null)
+                  setShowClaimModal(true)
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-luxury-gold border border-luxury-gold rounded-lg hover:bg-luxury-gold hover:text-white transition-colors"
+              >
+                <FileWarning className="w-4 h-4" />
+                登记理赔
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setEditingInsurance(null)
+                setShowInsuranceModal(true)
+              }}
+              className="flex items-center gap-2 px-4 py-2 luxury-gradient text-white rounded-lg text-sm hover:opacity-90"
+            >
+              <Plus className="w-4 h-4" />
+              创建保险档案
+            </button>
+          </div>
+
+          {insuranceValuation && insurancePolicies.length === 0 && (
+            <div className="bg-gradient-to-r from-luxury-cream to-amber-50 rounded-xl p-6 card-shadow border border-luxury-gold/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-6 h-6 text-luxury-gold" />
+                <h3 className="font-semibold text-lg text-gray-800">智能投保建议</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="p-3 bg-white/80 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">建议保额</p>
+                  <p className="text-lg font-bold text-luxury-gold">
+                    ¥{insuranceValuation.suggested_insured_amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-white/80 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">预估保费</p>
+                  <p className="text-lg font-bold text-gray-800">
+                    ¥{insuranceValuation.premium_estimate?.toLocaleString() || '-'}
+                  </p>
+                </div>
+                <div className="p-3 bg-white/80 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">建议免赔额</p>
+                  <p className="text-lg font-bold text-gray-800">
+                    ¥{insuranceValuation.deductible_suggestion?.toLocaleString() || '-'}
+                  </p>
+                </div>
+                <div className="p-3 bg-white/80 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">风险等级</p>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                    insuranceValuation.risk_level === 'low' ? 'bg-green-100 text-green-600' :
+                    insuranceValuation.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-red-100 text-red-600'
+                  }`}>
+                    {insuranceValuation.risk_level === 'low' ? '低风险' :
+                     insuranceValuation.risk_level === 'medium' ? '中风险' : '高风险'}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                {insuranceValuation.risk_tips.map((tip, i) => (
+                  <p key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                    <span className="text-luxury-gold mt-0.5">•</span>
+                    {tip}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {insurancePolicies.length === 0 ? (
+            <div className="bg-white rounded-xl p-12 text-center card-shadow">
+              <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm mb-4">暂无保险档案</p>
+              <p className="text-xs text-gray-400 mb-6">
+                创建保险档案，记录保单信息，跟踪理赔进度，系统结合包包价值提供智能投保建议
+              </p>
+              <button
+                onClick={() => {
+                  setEditingInsurance(null)
+                  setShowInsuranceModal(true)
+                }}
+                className="px-4 py-2 text-sm text-luxury-gold border border-luxury-gold rounded-lg hover:bg-luxury-gold hover:text-white transition-colors"
+              >
+                立即创建保险档案
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-800">保险档案</h3>
+              {insurancePolicies.map((policy) => {
+                const statusInfo = INSURANCE_STATUS_MAP[policy.status] || INSURANCE_STATUS_MAP.active
+                return (
+                  <div
+                    key={policy.id}
+                    className="bg-white rounded-xl p-5 card-shadow cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/insurance/${policy.id}`)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 ${statusInfo.bg} rounded-full flex items-center justify-center`}>
+                          <Shield className={`w-5 h-5 ${statusInfo.color}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium">{policy.policy_no}</p>
+                          <p className="text-sm text-gray-500">{policy.insurance_company}</p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm pt-3 border-t border-gray-100">
+                      <div>
+                        <span className="text-gray-500">保额：</span>
+                        <span className="font-medium text-luxury-gold">¥{policy.insured_amount.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">保费：</span>
+                        <span className="text-gray-800">¥{policy.premium?.toLocaleString() || 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">保障期限：</span>
+                        <span className="text-gray-800">
+                          {policy.coverage_start_date} 至 {policy.coverage_end_date}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {claims.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-800">理赔记录</h3>
+              {claims.map((claim) => {
+                const claimStatus = CLAIM_STATUS_MAP[claim.claim_status]
+                const ClaimIcon = claimStatus?.icon || Clock
+                return (
+                  <div
+                    key={claim.id}
+                    className="bg-white rounded-xl p-4 card-shadow cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/claims/${claim.id}`)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 ${claimStatus?.bg || 'bg-gray-100'} rounded-full flex items-center justify-center`}>
+                          <ClaimIcon className={`w-5 h-5 ${claimStatus?.color || 'text-gray-600'}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium">{claim.incident_type}</p>
+                          <p className="text-sm text-gray-500">{claim.incident_date} · {claim.damaged_parts || '损伤部位未记录'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${claimStatus?.bg || 'bg-gray-100'} ${claimStatus?.color || 'text-gray-600'}`}>
+                          <ClaimIcon className="w-3 h-3" />
+                          {claimStatus?.label || claim.claim_status}
+                        </span>
+                        {claim.payout_amount && (
+                          <p className="text-sm font-medium text-green-600 mt-1">
+                            赔付 ¥{claim.payout_amount.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {showEditModal && (
         <BagModal
           initialData={bag}
@@ -874,6 +1117,46 @@ export default function BagDetail() {
             setValueMonitor(monitor)
             loadValueAnalysis()
             alert(valueMonitor ? '监控设置已更新' : '保值监控已开启')
+          }}
+        />
+      )}
+
+      {showInsuranceModal && bag && (
+        <InsuranceModal
+          bagId={Number(id)}
+          bag={bag}
+          initialData={editingInsurance || undefined}
+          onClose={() => {
+            setShowInsuranceModal(false)
+            setEditingInsurance(null)
+          }}
+          onSuccess={(policy) => {
+            setShowInsuranceModal(false)
+            setEditingInsurance(null)
+            loadInsurancePolicies()
+            loadInsuranceValuation()
+            alert(editingInsurance ? '保险档案已更新' : '保险档案创建成功')
+          }}
+        />
+      )}
+
+      {showClaimModal && selectedPolicyForClaim && bag && (
+        <ClaimModal
+          policyId={selectedPolicyForClaim.id}
+          bagId={Number(id)}
+          policy={selectedPolicyForClaim}
+          initialData={editingClaim || undefined}
+          onClose={() => {
+            setShowClaimModal(false)
+            setEditingClaim(null)
+            setSelectedPolicyForClaim(null)
+          }}
+          onSuccess={(claim) => {
+            setShowClaimModal(false)
+            setEditingClaim(null)
+            setSelectedPolicyForClaim(null)
+            loadClaims()
+            alert(editingClaim ? '理赔记录已更新' : '理赔事件登记成功')
           }}
         />
       )}

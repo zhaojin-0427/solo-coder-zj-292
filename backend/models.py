@@ -27,6 +27,8 @@ class Bag(Base):
     authentication_images = relationship("AuthenticationImage", back_populates="bag", cascade="all, delete-orphan")
     maintenance_records = relationship("MaintenanceRecord", back_populates="bag", cascade="all, delete-orphan")
     authentication_results = relationship("AuthenticationResult", back_populates="bag", cascade="all, delete-orphan")
+    insurance_policies = relationship("InsurancePolicy", back_populates="bag", cascade="all, delete-orphan")
+    claim_events = relationship("ClaimEvent", back_populates="bag", cascade="all, delete-orphan")
 
 
 class PurchaseProofImage(Base):
@@ -205,3 +207,66 @@ class ValueHistory(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     bag = relationship("Bag")
+
+
+class InsurancePolicy(Base):
+    __tablename__ = "insurance_policies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bag_id = Column(Integer, ForeignKey("bags.id"), nullable=False)
+    policy_no = Column(String(100), unique=True, nullable=False)
+    insurance_company = Column(String(200), nullable=False)
+    coverage_start_date = Column(Date, nullable=False)
+    coverage_end_date = Column(Date, nullable=False)
+    insured_amount = Column(Float, nullable=False)
+    deductible = Column(Float, default=0)
+    premium = Column(Float, default=0)
+    coverage_scope = Column(Text)
+    special_exclusions = Column(Text)
+    status = Column(String(20), nullable=False, default="active")
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    bag = relationship("Bag")
+    claim_events = relationship("ClaimEvent", back_populates="insurance_policy", cascade="all, delete-orphan")
+
+
+class ClaimEvent(Base):
+    __tablename__ = "claim_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    insurance_policy_id = Column(Integer, ForeignKey("insurance_policies.id"), nullable=False)
+    bag_id = Column(Integer, ForeignKey("bags.id"), nullable=False)
+    incident_type = Column(String(100), nullable=False)
+    incident_date = Column(Date, nullable=False)
+    damaged_parts = Column(String(500))
+    repair_estimate = Column(Float)
+    claim_status = Column(String(30), nullable=False, default="pending_submit")
+    payout_amount = Column(Float)
+    claim_no = Column(String(100))
+    description = Column(Text)
+    submitted_at = Column(DateTime)
+    reviewed_at = Column(DateTime)
+    paid_at = Column(DateTime)
+    rejected_at = Column(DateTime)
+    cancelled_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    insurance_policy = relationship("InsurancePolicy", back_populates="claim_events")
+    bag = relationship("Bag")
+    photos = relationship("ClaimPhoto", back_populates="claim_event", cascade="all, delete-orphan")
+
+
+class ClaimPhoto(Base):
+    __tablename__ = "claim_photos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    claim_event_id = Column(Integer, ForeignKey("claim_events.id"), nullable=False)
+    photo_path = Column(String(500), nullable=False)
+    photo_type = Column(String(50))
+    description = Column(String(200))
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+
+    claim_event = relationship("ClaimEvent", back_populates="photos")

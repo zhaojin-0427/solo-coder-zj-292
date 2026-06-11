@@ -150,6 +150,19 @@ class StatsResponse(BaseModel):
     total_appraisal_orders: int
     avg_report_days: float
     brand_risk_distribution: List[dict]
+    insured_bags_count: int
+    total_policies_count: int
+    active_policies_count: int
+    total_insured_amount: float
+    total_premium: float
+    annual_premium_ratio: float
+    total_claims_count: int
+    paid_claims_count: float
+    claim_success_rate: float
+    total_payout_amount: float
+    avg_payout_amount: float
+    brand_coverage: List[dict]
+    claim_type_distribution: List[dict]
 
 
 class AppraisalOrderCreate(BaseModel):
@@ -360,3 +373,150 @@ class ValueStatsResponse(BaseModel):
     suggest_sell_count: int
     brand_health: List[dict]
     value_trend_30d: List[dict]
+
+
+class InsurancePolicyBase(BaseModel):
+    insurance_company: str
+    policy_no: str
+    coverage_start_date: date
+    coverage_end_date: date
+    insured_amount: float
+    deductible: Optional[float] = 0
+    premium: Optional[float] = 0
+    coverage_scope: Optional[str] = None
+    special_exclusions: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class InsurancePolicyCreate(InsurancePolicyBase):
+    bag_id: int
+
+
+class InsurancePolicyUpdate(BaseModel):
+    insurance_company: Optional[str] = None
+    policy_no: Optional[str] = None
+    coverage_start_date: Optional[date] = None
+    coverage_end_date: Optional[date] = None
+    insured_amount: Optional[float] = None
+    deductible: Optional[float] = None
+    premium: Optional[float] = None
+    coverage_scope: Optional[str] = None
+    special_exclusions: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class InsurancePolicyResponse(InsurancePolicyBase):
+    id: int
+    bag_id: int
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InsurancePolicyDetailResponse(InsurancePolicyResponse):
+    bag_brand: Optional[str] = None
+    bag_model: Optional[str] = None
+    claim_count: Optional[int] = 0
+
+
+class InsuranceValuationResponse(BaseModel):
+    bag_id: int
+    bag_brand: str
+    bag_model: str
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    suggested_insured_amount: float
+    risk_level: str
+    risk_tips: List[str]
+    premium_estimate: Optional[float] = None
+    deductible_suggestion: Optional[float] = None
+    value_retention_rate: Optional[float] = None
+    total_maintenance_cost: Optional[float] = None
+    appraisal_score: Optional[float] = None
+    consignment_sold_count: Optional[int] = 0
+
+
+class ClaimEventBase(BaseModel):
+    incident_type: str
+    incident_date: date
+    damaged_parts: Optional[str] = None
+    repair_estimate: Optional[float] = None
+    description: Optional[str] = None
+
+
+class ClaimEventCreate(ClaimEventBase):
+    insurance_policy_id: int
+    bag_id: int
+
+
+class ClaimEventUpdate(BaseModel):
+    incident_type: Optional[str] = None
+    incident_date: Optional[date] = None
+    damaged_parts: Optional[str] = None
+    repair_estimate: Optional[float] = None
+    description: Optional[str] = None
+    claim_no: Optional[str] = None
+
+
+class ClaimStatusUpdate(BaseModel):
+    claim_status: str
+    payout_amount: Optional[float] = None
+
+
+class ClaimEventResponse(ClaimEventBase):
+    id: int
+    insurance_policy_id: int
+    bag_id: int
+    claim_status: str
+    payout_amount: Optional[float] = None
+    claim_no: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    reviewed_at: Optional[datetime] = None
+    paid_at: Optional[datetime] = None
+    rejected_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ClaimEventDetailResponse(ClaimEventResponse):
+    bag_brand: Optional[str] = None
+    bag_model: Optional[str] = None
+    policy_no: Optional[str] = None
+    insurance_company: Optional[str] = None
+    photos: List[dict] = []
+
+
+class ClaimPhotoResponse(BaseModel):
+    id: int
+    claim_event_id: int
+    photo_path: str
+    photo_type: Optional[str] = None
+    description: Optional[str] = None
+    uploaded_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InsuranceStatsResponse(BaseModel):
+    insured_bags_count: int
+    total_policies_count: int
+    active_policies_count: int
+    total_insured_amount: float
+    total_premium: float
+    annual_premium_ratio: float
+    total_claims_count: int
+    paid_claims_count: float
+    claim_success_rate: float
+    total_payout_amount: float
+    avg_payout_amount: float
+    brand_coverage: List[dict]
+    claim_type_distribution: List[dict]

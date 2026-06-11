@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert, Store, Percent, Calendar, ArrowDownToLine, Bell, Target, HeartPulse, TrendingDown } from 'lucide-react'
+import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert, Store, Percent, Calendar, ArrowDownToLine, Bell, Target, HeartPulse, TrendingDown, Shield, FileWarning, CheckCircle2 } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, LineChart, Line
@@ -726,6 +726,170 @@ export default function Statistics() {
           <Bell className="w-4 h-4" />
           查看全部保值预警
         </Link>
+      </div>
+
+      <div className="mb-6 mt-8">
+        <h3 className="text-xl font-bold text-luxury-black flex items-center gap-3 mb-4">
+          <Shield className="w-6 h-6 text-luxury-gold" />
+          保险与理赔统计
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-luxury-gold">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">已投保包包</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.insured_bags_count}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+              <Shield className="w-6 h-6 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            保障中保单 {stats.active_policies_count} 份
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-emerald-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">总保额</p>
+              <p className="text-xl font-bold text-gray-800 mt-1">
+                ¥{(stats.total_insured_amount / 10000).toFixed(1)}万
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            总保费 ¥{stats.total_premium.toLocaleString()}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">年化保费占比</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.annual_premium_ratio}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Percent className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            保费占保额比例
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">理赔成功率</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.claim_success_rate}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            已结案 {stats.paid_claims_count + stats.total_claims_count - stats.paid_claims_count > 0
+              ? stats.paid_claims_count + '件成功'
+              : '暂无数据'}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-orange-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">总赔付金额</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                ¥{stats.total_payout_amount.toLocaleString()}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <FileWarning className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            平均赔付 ¥{stats.avg_payout_amount.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {stats.brand_coverage && stats.brand_coverage.length > 0 && (
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-luxury-gold" />
+              各品牌保障覆盖率
+            </h3>
+            <div className="space-y-4">
+              {stats.brand_coverage.slice(0, 6).map((brand, index) => (
+                <div key={brand.brand}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white font-medium ${
+                        index === 0 ? 'bg-luxury-gold' :
+                        index === 1 ? 'bg-amber-500' :
+                        index === 2 ? 'bg-yellow-500' : 'bg-gray-400'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      {brand.brand}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {brand.insured_bags}/{brand.total_bags} 件
+                      </span>
+                      <span className="text-sm font-bold text-luxury-gold">
+                        覆盖率 {brand.coverage_rate}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div
+                      className="h-full bg-gradient-to-r from-luxury-gold to-amber-500 rounded-full transition-all"
+                      style={{ width: `${Math.max(brand.coverage_rate, 3)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <span>保单 {brand.policies_count} 份</span>
+                    <span>保额 ¥{brand.total_insured_amount.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {stats.claim_type_distribution && stats.claim_type_distribution.length > 0 && (
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FileWarning className="w-5 h-5 text-orange-500" />
+              理赔类型分布
+            </h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={stats.claim_type_distribution}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="type" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend />
+                <Bar yAxisId="left" dataKey="count" name="理赔次数" fill="#C9A962" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="right" dataKey="total_payout" name="赔付金额" fill="#E8D5A0" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">

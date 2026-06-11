@@ -269,4 +269,109 @@ export interface StatsData {
   suggest_sell_count: number
   brand_health: BrandHealthData[]
   value_trend_30d: { date: string; total_value: number; count: number }[]
+  insured_bags_count: number
+  total_policies_count: number
+  active_policies_count: number
+  total_insured_amount: number
+  total_premium: number
+  annual_premium_ratio: number
+  total_claims_count: number
+  paid_claims_count: number
+  claim_success_rate: number
+  total_payout_amount: number
+  avg_payout_amount: number
+  brand_coverage: BrandCoverageData[]
+  claim_type_distribution: { type: string; count: number; total_payout: number }[]
+}
+
+export type InsurancePolicyStatus = 'active' | 'expired' | 'cancelled' | 'pending'
+
+export interface InsurancePolicy {
+  id: number
+  bag_id: number
+  policy_no: string
+  insurance_company: string
+  coverage_start_date: string
+  coverage_end_date: string
+  insured_amount: number
+  deductible: number
+  premium: number
+  coverage_scope?: string
+  special_exclusions?: string
+  status: InsurancePolicyStatus
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface InsurancePolicyDetail extends InsurancePolicy {
+  bag_brand?: string
+  bag_model?: string
+  claim_count?: number
+}
+
+export interface InsuranceValuation {
+  bag_id: number
+  bag_brand: string
+  bag_model: string
+  purchase_price?: number
+  current_value?: number
+  suggested_insured_amount: number
+  risk_level: 'low' | 'medium' | 'high'
+  risk_tips: string[]
+  premium_estimate?: number
+  deductible_suggestion?: number
+  value_retention_rate?: number
+  total_maintenance_cost?: number
+  appraisal_score?: number
+  consignment_sold_count: number
+}
+
+export type ClaimStatus = 'pending_submit' | 'under_review' | 'needs_material' | 'paid' | 'rejected' | 'cancelled'
+
+export interface ClaimEvent {
+  id: number
+  insurance_policy_id: number
+  bag_id: number
+  incident_type: string
+  incident_date: string
+  damaged_parts?: string
+  repair_estimate?: number
+  claim_status: ClaimStatus
+  payout_amount?: number
+  claim_no?: string
+  description?: string
+  submitted_at?: string
+  reviewed_at?: string
+  paid_at?: string
+  rejected_at?: string
+  cancelled_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ClaimEventDetail extends ClaimEvent {
+  bag_brand?: string
+  bag_model?: string
+  policy_no?: string
+  insurance_company?: string
+  photos: ClaimPhoto[]
+}
+
+export interface ClaimPhoto {
+  id: number
+  claim_event_id: number
+  photo_path: string
+  photo_type?: string
+  description?: string
+  uploaded_at: string
+}
+
+export interface BrandCoverageData {
+  brand: string
+  insured_bags: number
+  total_bags: number
+  coverage_rate: number
+  policies_count: number
+  total_insured_amount: number
 }

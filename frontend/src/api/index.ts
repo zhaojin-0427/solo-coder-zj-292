@@ -151,4 +151,74 @@ export const valueMonitorAPI = {
     api.get(`/value-monitor/history/${bagId}`, { params: { days } }),
 }
 
+export const insuranceAPI = {
+  getPolicies: (params?: { bag_id?: number; status?: string }) =>
+    api.get('/insurance/policies', { params }),
+  getPolicy: (id: number) => api.get(`/insurance/policies/${id}`),
+  createPolicy: (data: {
+    bag_id: number
+    insurance_company: string
+    policy_no: string
+    coverage_start_date: string
+    coverage_end_date: string
+    insured_amount: number
+    deductible?: number
+    premium?: number
+    coverage_scope?: string
+    special_exclusions?: string
+    notes?: string
+  }) => api.post('/insurance/policies', data),
+  updatePolicy: (id: number, data: {
+    insurance_company?: string
+    policy_no?: string
+    coverage_start_date?: string
+    coverage_end_date?: string
+    insured_amount?: number
+    deductible?: number
+    premium?: number
+    coverage_scope?: string
+    special_exclusions?: string
+    status?: string
+    notes?: string
+  }) => api.put(`/insurance/policies/${id}`, data),
+  updatePolicyStatus: (id: number, status: string) =>
+    api.patch(`/insurance/policies/${id}/status`, { status }),
+  deletePolicy: (id: number) => api.delete(`/insurance/policies/${id}`),
+  getValuation: (bagId: number) => api.get(`/insurance/valuation/${bagId}`),
+
+  getClaims: (params?: { bag_id?: number; policy_id?: number; claim_status?: string }) =>
+    api.get('/insurance/claims', { params }),
+  getClaim: (id: number) => api.get(`/insurance/claims/${id}`),
+  createClaim: (data: {
+    insurance_policy_id: number
+    bag_id: number
+    incident_type: string
+    incident_date: string
+    damaged_parts?: string
+    repair_estimate?: number
+    description?: string
+  }) => api.post('/insurance/claims', data),
+  updateClaim: (id: number, data: {
+    incident_type?: string
+    incident_date?: string
+    damaged_parts?: string
+    repair_estimate?: number
+    description?: string
+    claim_no?: string
+  }) => api.put(`/insurance/claims/${id}`, data),
+  updateClaimStatus: (id: number, data: { claim_status: string; payout_amount?: number }) =>
+    api.patch(`/insurance/claims/${id}/status`, data),
+  deleteClaim: (id: number) => api.delete(`/insurance/claims/${id}`),
+  uploadClaimPhoto: (claimId: number, file: File, photoType?: string, description?: string) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (photoType) formData.append('photo_type', photoType)
+    if (description) formData.append('description', description)
+    return api.post(`/insurance/claims/${claimId}/photos`, formData)
+  },
+  deleteClaimPhoto: (photoId: number) =>
+    api.delete(`/insurance/claims/photos/${photoId}`),
+  getInsuranceStats: () => api.get('/insurance/stats'),
+}
+
 export default api

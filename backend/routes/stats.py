@@ -5,7 +5,7 @@ from sqlalchemy import func
 from datetime import date, timedelta
 
 from database import get_db
-from models import Bag, MaintenanceRecord, BrandFeature, MarketPrice, AppraisalOrder, ConsignmentOrder, ValueMonitor, ValueHistory
+from models import Bag, MaintenanceRecord, BrandFeature, MarketPrice, AppraisalOrder, ConsignmentOrder, ValueMonitor, ValueHistory, InsurancePolicy, ClaimEvent
 
 router = APIRouter(prefix="/api", tags=["行情与统计"])
 
@@ -29,6 +29,8 @@ def get_stats(db: Session = Depends(get_db)):
         {"brand": b[0], "count": b[1]}
         for b in sorted(brands, key=lambda x: x[1], reverse=True)
     ]
+
+    brand_total_dict = {b[0]: b[1] for b in brands}
 
     total_maintenance_cost = db.query(func.coalesce(func.sum(MaintenanceRecord.cost), 0)).scalar()
 
@@ -255,6 +257,69 @@ def get_stats(db: Session = Depends(get_db)):
             v["total_value"] = round(base_value * (0.95 + 0.1 * (i / 29)), 2)
             v["count"] = len(all_bags_with_value)
 
+    total_policies = db.query(func.count(InsurancePolicy.id)).scalar() or 0
+    active_policies = db.query(func.count(InsurancePolicy.id)).filter(
+        InsurancePolicy.status == "active"
+    ).scalar() or 0
+    insured_bags = db.query(func.count(func.distinct(InsurancePolicy.bag_id))).filter(
+        InsurancePolicy.status == "active"
+    ).scalar() or 0
+    total_insured_amount = db.query(
+        func.coalesce(func.sum(InsurancePolicy.insured_amount), 0)
+    ).filter(InsurancePolicy.status == "active").scalar() or 0
+    total_premium = db.query(
+        func.coalesce(func.sum(InsurancePolicy.premium), 0)
+    ).filter(InsurancePolicy.status == "active").scalar() or 0
+    annual_premium_ratio = round(total_premium / total_insured_amount * 100, 2) if total_insured_amount > 0 else 0.0
+
+    total_claims = db.query(func.count(ClaimEvent.id)).scalar() or 0
+    paid_claims = db.query(func.count(ClaimEvent.id)).filter(
+        ClaimEvent.claim_status == "paid"
+    ).scalar() or 0
+    closed_claims = db.query(func.count(ClaimEvent.id)).filter(
+        ClaimEvent.claim_status.in_(["paid", "rejected"])
+    ).scalar() or 0
+    claim_success_rate = round(paid_claims / closed_claims * 100, 1) if closed_claims > 0 else 0.0
+    total_payout = db.query(
+        func.coalesce(func.sum(ClaimEvent.payout_amount), 0)
+    ).filter(ClaimEvent.claim_status == "paid").scalar() or 0
+    avg_payout = round(total_payout / paid_claims, 2) if paid_claims > 0 else 0.0
+
+    brand_insurance_query = db.query(
+        Bag.brand,
+        func.count(func.distinct(InsurancePolicy.bag_id)),
+        func.count(InsurancePolicy.id),
+        func.sum(InsurancePolicy.insured_amount)
+    ).join(InsurancePolicy, InsurancePolicy.bag_id == Bag.id) \
+     .filter(InsurancePolicy.status == "active") \
+     .group_by(Bag.brand).all()
+
+    brand_coverage = []
+    for b in brand_insurance_query:
+        brand, bag_count, policy_count, insured_sum = b
+        total_brand_bags = brand_total_dict.get(brand, 0)
+        coverage_rate = round(bag_count / total_brand_bags * 100, 1) if total_brand_bags > 0 else 0
+        brand_coverage.append({
+            "brand": brand,
+            "insured_bags": bag_count,
+            "total_bags": total_brand_bags,
+            "coverage_rate": coverage_rate,
+            "policies_count": policy_count,
+            "total_insured_amount": insured_sum or 0,
+        })
+    brand_coverage = sorted(brand_coverage, key=lambda x: x["coverage_rate"], reverse=True)
+
+    claim_type_query = db.query(
+        ClaimEvent.incident_type,
+        func.count(ClaimEvent.id),
+        func.sum(func.IIF(ClaimEvent.claim_status == "paid", ClaimEvent.payout_amount, 0))
+    ).group_by(ClaimEvent.incident_type).all()
+
+    claim_type_distribution = [
+        {"type": c[0], "count": c[1], "total_payout": c[2] or 0}
+        for c in sorted(claim_type_query, key=lambda x: x[1], reverse=True)
+    ]
+
     return {
         "total_bags": total_bags,
         "total_brands": total_brands,
@@ -280,4 +345,17 @@ def get_stats(db: Session = Depends(get_db)):
         "suggest_sell_count": suggest_sell_count,
         "brand_health": brand_health,
         "value_trend_30d": value_trend_30d,
+        "insured_bags_count": insured_bags,
+        "total_policies_count": total_policies,
+        "active_policies_count": active_policies,
+        "total_insured_amount": total_insured_amount,
+        "total_premium": total_premium,
+        "annual_premium_ratio": annual_premium_ratio,
+        "total_claims_count": total_claims,
+        "paid_claims_count": paid_claims,
+        "claim_success_rate": claim_success_rate,
+        "total_payout_amount": total_payout,
+        "avg_payout_amount": avg_payout,
+        "brand_coverage": brand_coverage,
+        "claim_type_distribution": claim_type_distribution,
     }

@@ -12,6 +12,8 @@ import ConsignmentList from './pages/ConsignmentList'
 import ConsignmentDetail from './pages/ConsignmentDetail'
 import ValueAlertList from './pages/ValueAlertList'
 import ValueAnalysisDetail from './pages/ValueAnalysisDetail'
+import InsuranceDetail from './pages/InsuranceDetail'
+import ClaimDetail from './pages/ClaimDetail'
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
         <Route path="/consignments/:id" element={<ConsignmentDetail />} />
         <Route path="/value-alerts" element={<ValueAlertList />} />
         <Route path="/value-analysis/:id" element={<ValueAnalysisDetail />} />
+        <Route path="/insurance/:id" element={<InsuranceDetail />} />
+        <Route path="/claims/:id" element={<ClaimDetail />} />
       </Routes>
     </Layout>
   )
