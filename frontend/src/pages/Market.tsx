@@ -5,6 +5,7 @@ import { MarketPrice } from '../types'
 
 export default function Market() {
   const [prices, setPrices] = useState<MarketPrice[]>([])
+  const [allBrands, setAllBrands] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [filterBrand, setFilterBrand] = useState('')
   const [searchModel, setSearchModel] = useState('')
@@ -18,14 +19,16 @@ export default function Market() {
     try {
       const res = await statsAPI.getMarketPrices(filterBrand || undefined)
       setPrices(res.data)
+      if (!filterBrand) {
+        const brands = [...new Set(res.data.map((p: MarketPrice) => p.brand))]
+        setAllBrands(brands)
+      }
     } catch (error) {
       console.error('加载行情数据失败', error)
     } finally {
       setLoading(false)
     }
   }
-
-  const brands = [...new Set(prices.map(p => p.brand))]
 
   const filteredPrices = prices.filter(p =>
     p.model.toLowerCase().includes(searchModel.toLowerCase())
@@ -80,7 +83,7 @@ export default function Market() {
               className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-luxury-gold"
             >
               <option value="">全部品牌</option>
-              {brands.map(b => <option key={b} value={b}>{b}</option>)}
+              {allBrands.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[250px] flex items-center gap-2">
