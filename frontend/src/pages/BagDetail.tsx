@@ -359,6 +359,44 @@ export default function BagDetail() {
                       </p>
                     </div>
                   </div>
+                  {record.service_items && (
+                    <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
+                      服务项目：{record.service_items}
+                    </p>
+                  )}
+                  {record.service_provider && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      服务商：{record.service_provider}
+                    </p>
+                  )}
+                  {(record.before_photo || record.after_photo) && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-sm font-medium text-gray-700 mb-2">前后对比</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {record.before_photo ? (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">保养前</p>
+                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                              <img src={record.before_photo} alt="保养前" className="w-full h-full object-cover" />
+                            </div>
+                          </div>
+                        ) : null}
+                        {record.after_photo ? (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">保养后</p>
+                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                              <img src={record.after_photo} alt="保养后" className="w-full h-full object-cover" />
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
+                  {record.notes && (
+                    <p className="text-sm text-gray-500 mt-3 pt-3 border-t border-gray-100">
+                      备注：{record.notes}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react'
+import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, LineChart, Line
@@ -62,6 +62,11 @@ export default function Statistics() {
     ? stats.total_maintenance_cost / stats.total_bags
     : 0
 
+  const costRatioData = stats.total_purchase_price > 0 ? [
+    { name: '购入总价', value: stats.total_purchase_price },
+    { name: '保养费用', value: stats.total_maintenance_cost },
+  ] : []
+
   return (
     <div>
       <div className="mb-6">
@@ -74,7 +79,7 @@ export default function Statistics() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl p-5 card-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -108,6 +113,23 @@ export default function Statistics() {
         <div className="bg-white rounded-xl p-5 card-shadow">
           <div className="flex items-center justify-between">
             <div>
+              <p className="text-sm text-gray-500">保养成本占比</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.maintenance_cost_ratio || 0}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <PieChartIcon className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            购入总价 ¥{stats.total_purchase_price.toLocaleString()}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm text-gray-500">平均保值率</p>
               <p className="text-2xl font-bold text-gray-800 mt-1">
                 {stats.avg_retention_rate || '--'}%
@@ -118,23 +140,6 @@ export default function Statistics() {
             </div>
           </div>
           <p className="text-xs text-gray-400 mt-3">基于当前估值计算</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 card-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">高频问题部位</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">
-                {stats.common_problem_parts[0]?.part || '--'}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-3">
-            {stats.common_problem_parts[0]?.count || 0} 次记录
-          </p>
         </div>
       </div>
 
@@ -192,7 +197,7 @@ export default function Statistics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-xl p-6 card-shadow">
           <h3 className="font-semibold text-gray-800 mb-4">平均保值周期</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -213,6 +218,37 @@ export default function Statistics() {
           </ResponsiveContainer>
         </div>
 
+        <div className="bg-white rounded-xl p-6 card-shadow">
+          <h3 className="font-semibold text-gray-800 mb-4">保养成本占购入总价比例</h3>
+          {costRatioData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-gray-400">
+              暂无数据
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={costRatioData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={110}
+                  paddingAngle={3}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                >
+                  <Cell fill="#D4B86A" />
+                  <Cell fill="#E8D5A0" />
+                </Pie>
+                <Tooltip formatter={(value: number) => [`¥${value.toLocaleString()}`, '']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 card-shadow">
           <h3 className="font-semibold text-gray-800 mb-4">高频问题部位</h3>
           <div className="space-y-4">

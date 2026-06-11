@@ -31,6 +31,11 @@ def get_stats(db: Session = Depends(get_db)):
 
     total_maintenance_cost = db.query(func.coalesce(func.sum(MaintenanceRecord.cost), 0)).scalar()
 
+    total_purchase_price = db.query(func.coalesce(func.sum(Bag.purchase_price), 0)).scalar()
+    maintenance_cost_ratio = 0
+    if total_purchase_price and total_purchase_price > 0:
+        maintenance_cost_ratio = round((total_maintenance_cost / total_purchase_price) * 100, 2)
+
     maintenance_by_type = db.query(
         MaintenanceRecord.service_type,
         func.count(MaintenanceRecord.id),
@@ -70,6 +75,8 @@ def get_stats(db: Session = Depends(get_db)):
         "total_bags": total_bags,
         "total_brands": total_brands,
         "total_maintenance_cost": total_maintenance_cost or 0,
+        "total_purchase_price": total_purchase_price or 0,
+        "maintenance_cost_ratio": maintenance_cost_ratio,
         "avg_retention_rate": round(avg_retention, 1),
         "brand_distribution": brand_distribution,
         "maintenance_cost_by_type": maintenance_cost_by_type,

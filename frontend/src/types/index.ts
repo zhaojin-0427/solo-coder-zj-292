@@ -73,6 +73,8 @@ export interface StatsData {
   total_bags: number
   total_brands: number
   total_maintenance_cost: number
+  total_purchase_price: number
+  maintenance_cost_ratio: number
   avg_retention_rate: number
   brand_distribution: { brand: string; count: number }[]
   maintenance_cost_by_type: { type: string; count: number; total_cost: number }[]
