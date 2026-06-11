@@ -3,10 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, FileBadge, Clock, CheckCircle2, Eye, XCircle,
   Send, User, Phone, Building, AlertTriangle, FileText,
-  Download, Trash2, Edit3, ShieldCheck, Package
+  Download, Trash2, Edit3, ShieldCheck, Package, Camera, Image as ImageIcon
 } from 'lucide-react'
-import { appraisalAPI } from '../api'
-import { AppraisalOrderDetail, AppraisalStatus } from '../types'
+import { appraisalAPI, bagAPI } from '../api'
+import { AppraisalOrderDetail, AppraisalStatus, BagDetail as BagDetailType } from '../types'
 
 const STATUS_MAP: Record<AppraisalStatus, { label: string; color: string; bg: string; icon: any; desc: string }> = {
   pending_submit: { label: '待提交', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock, desc: '委托单已创建，等待提交' },
@@ -22,6 +22,7 @@ export default function AppraisalDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [order, setOrder] = useState<AppraisalOrderDetail | null>(null)
+  const [bag, setBag] = useState<BagDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [showStatusPanel, setShowStatusPanel] = useState(false)
@@ -39,7 +40,16 @@ export default function AppraisalDetail() {
     setLoading(true)
     try {
       const res = await appraisalAPI.getOrder(Number(id))
-      setOrder(res.data)
+      const orderData = res.data
+      setOrder(orderData)
+      if (orderData.bag_id) {
+        try {
+          const bagRes = await bagAPI.getBag(orderData.bag_id)
+          setBag(bagRes.data)
+        } catch (e) {
+          console.error('加载关联包包失败', e)
+        }
+      }
     } catch (error) {
       console.error('加载委托详情失败', error)
     } finally {
@@ -402,40 +412,83 @@ export default function AppraisalDetail() {
 
           <div className="bg-white rounded-xl p-6 card-shadow">
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Eye className="w-5 h-5 text-luxury-gold" />
+              <ImageIcon className="w-5 h-5 text-luxury-gold" />
               鉴定资料
             </h3>
-            <div className="space-y-3 text-sm">
-              {(() => {
-                const purchaseCount = order.purchase_proof_refs ? order.purchase_proof_refs.split(',').length : 0
-                const authCount = order.auth_image_refs ? order.auth_image_refs.split(',').length : 0
-                return (
-                  <>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">购买凭证</span>
-                      <span className={`font-medium ${purchaseCount > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                        {purchaseCount > 0 ? `${purchaseCount} 张` : '未上传'}
-                      </span>
+
+            {bag ? (
+              <div className="space-y-5">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    购买凭证
+                    <span className="ml-2 text-xs text-gray-400">
+                      {bag.purchase_proof_images.length} 张
+                    </span>
+                  </p>
+                  {bag.purchase_proof_images.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {bag.purchase_proof_images.map((img) => (
+                        <div key={img.id} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                          <img src={img.image_path} alt="购买凭证" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">五金刻字</span>
-                      <span className="font-medium text-green-600">已关联</span>
+                  ) : (
+                    <div className="aspect-video bg-gray-50 rounded-lg flex items-center justify-center">
+                      <Camera className="w-8 h-8 text-gray-300" />
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">内标走线</span>
-                      <span className="font-medium text-green-600">已关联</span>
+                  )}
+                </div>
+
+                {['五金刻字', '内标走线', '防尘袋烫金'].map((type) => {
+                  const images = bag.authentication_images.filter(img => img.image_type === type)
+                  return (
+                    <div key={type}>
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        {type}
+                        <span className="ml-2 text-xs text-gray-400">
+                          {images.length} 张
+                        </span>
+                      </p>
+                      {images.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {images.map((img) => (
+                            <div key={img.id} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                              <img src={img.image_path} alt={type} className="w-full h-full object-cover" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-gray-50 rounded-lg flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-gray-300" />
+                        </div>
+                      )}
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">防尘袋烫金</span>
-                      <span className="font-medium text-green-600">已关联</span>
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      共关联鉴定照片 {authCount} 张
-                    </p>
-                  </>
-                )
-              })()}
-            </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                {(() => {
+                  const purchaseCount = order.purchase_proof_refs ? order.purchase_proof_refs.split(',').length : 0
+                  const authCount = order.auth_image_refs ? order.auth_image_refs.split(',').length : 0
+                  return (
+                    <>
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-600">购买凭证</span>
+                        <span className={"font-medium " + (purchaseCount > 0 ? 'text-green-600' : 'text-gray-400')}>
+                          {purchaseCount > 0 ? purchaseCount + ' 张' : '未上传'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-600">鉴定照片</span>
+                        <span className="font-medium text-green-600">{authCount} 张</span>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            )}
           </div>
         </div>
       </div>

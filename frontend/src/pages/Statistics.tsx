@@ -147,7 +147,7 @@ export default function Statistics() {
             <div>
               <p className="text-sm text-gray-500">平均出报告时长</p>
               <p className="text-2xl font-bold text-gray-800 mt-1">
-                {stats.avg_report_days || '--'} <span className="text-base font-normal text-gray-500">天</span>
+                {stats.avg_report_days !== undefined && stats.avg_report_days !== null ? stats.avg_report_days : '--'} <span className="text-base font-normal text-gray-500">天</span>
               </p>
             </div>
             <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -155,7 +155,8 @@ export default function Statistics() {
             </div>
           </div>
           <p className="text-xs text-gray-400 mt-3">
-            {stats.avg_report_days <= 3 ? '效率优秀 ⚡' :
+            {stats.total_appraisal_orders === 0 ? '暂无报告数据' :
+             stats.avg_report_days <= 3 ? '效率优秀 ⚡' :
              stats.avg_report_days <= 5 ? '效率正常' : '建议选择加急服务'}
           </p>
         </div>
