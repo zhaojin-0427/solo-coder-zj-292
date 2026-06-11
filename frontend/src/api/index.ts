@@ -126,4 +126,29 @@ export const consignmentAPI = {
   deleteOrder: (id: number) => api.delete(`/consignments/${id}`),
 }
 
+export const valueMonitorAPI = {
+  getMonitorByBag: (bagId: number) => api.get(`/value-monitor/bag/${bagId}`),
+  createMonitor: (data: {
+    bag_id: number
+    stop_loss_price?: number
+    target_sell_price?: number
+    planned_hold_months?: number
+    follow_platforms?: string
+  }) => api.post('/value-monitor', data),
+  updateMonitor: (id: number, data: {
+    stop_loss_price?: number
+    target_sell_price?: number
+    planned_hold_months?: number
+    follow_platforms?: string
+    is_active?: number
+  }) => api.put(`/value-monitor/${id}`, data),
+  deleteMonitor: (id: number) => api.delete(`/value-monitor/${id}`),
+  toggleMonitor: (id: number) => api.patch(`/value-monitor/${id}/toggle`),
+  getAnalysis: (bagId: number) => api.get(`/value-monitor/analysis/${bagId}`),
+  getAlerts: () => api.get('/value-monitor/alerts'),
+  getMonitorList: (status?: string) => api.get('/value-monitor/list', { params: { status } }),
+  getValueHistory: (bagId: number, days?: number) =>
+    api.get(`/value-monitor/history/${bagId}`, { params: { days } }),
+}
+
 export default api

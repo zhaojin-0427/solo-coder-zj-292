@@ -172,3 +172,36 @@ class ConsignmentOrder(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     bag = relationship("Bag")
+
+
+class ValueMonitor(Base):
+    __tablename__ = "value_monitors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bag_id = Column(Integer, ForeignKey("bags.id"), nullable=False)
+    is_active = Column(Integer, default=1)
+    stop_loss_price = Column(Float)
+    target_sell_price = Column(Float)
+    planned_hold_months = Column(Integer)
+    follow_platforms = Column(String(500))
+    last_analyzed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    bag = relationship("Bag")
+
+
+class ValueHistory(Base):
+    __tablename__ = "value_histories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bag_id = Column(Integer, ForeignKey("bags.id"), nullable=False)
+    record_date = Column(Date, nullable=False)
+    estimated_value = Column(Float, nullable=False)
+    value_change = Column(Float)
+    change_percent = Column(Float)
+    source = Column(String(50))
+    notes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    bag = relationship("Bag")

@@ -10,6 +10,8 @@ import AppraisalList from './pages/AppraisalList'
 import AppraisalDetail from './pages/AppraisalDetail'
 import ConsignmentList from './pages/ConsignmentList'
 import ConsignmentDetail from './pages/ConsignmentDetail'
+import ValueAlertList from './pages/ValueAlertList'
+import ValueAnalysisDetail from './pages/ValueAnalysisDetail'
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
         <Route path="/appraisals/:id" element={<AppraisalDetail />} />
         <Route path="/consignments" element={<ConsignmentList />} />
         <Route path="/consignments/:id" element={<ConsignmentDetail />} />
+        <Route path="/value-alerts" element={<ValueAlertList />} />
+        <Route path="/value-analysis/:id" element={<ValueAnalysisDetail />} />
       </Routes>
     </Layout>
   )

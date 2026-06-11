@@ -156,6 +156,94 @@ export interface ConsignmentOrderDetail extends ConsignmentOrder {
   bag_model?: string
 }
 
+export interface ValueMonitor {
+  id: number
+  bag_id: number
+  is_active: number
+  stop_loss_price?: number
+  target_sell_price?: number
+  planned_hold_months?: number
+  follow_platforms?: string
+  last_analyzed_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export type ValueStatus = 'appreciating' | 'stable' | 'mild_decline' | 'suggest_sell' | 'target_reached' | 'not_recommend_sell'
+
+export interface ValueAnalysis {
+  bag_id: number
+  bag_brand: string
+  bag_model: string
+  purchase_price?: number
+  current_value?: number
+  value_change?: number
+  value_change_percent?: number
+  total_maintenance_cost: number
+  net_profit?: number
+  profit_rate?: number
+  hold_days: number
+  value_status: ValueStatus
+  status_label: string
+  status_color: string
+  suggestions: string[]
+  stop_loss_price?: number
+  target_sell_price?: number
+  planned_hold_months?: number
+  is_stop_loss_triggered: boolean
+  is_target_reached: boolean
+  market_price_trend?: string
+  auth_risk_level?: string
+  consignment_sold_count: number
+  avg_sell_cycle?: number
+}
+
+export interface ValueAlertItem {
+  bag_id: number
+  bag_brand: string
+  bag_model: string
+  alert_type: string
+  alert_level: string
+  current_value?: number
+  threshold_value?: number
+  message: string
+}
+
+export interface ValueMonitorListItem {
+  id: number
+  bag_id: number
+  bag_brand: string
+  bag_model: string
+  is_active: number
+  stop_loss_price?: number
+  target_sell_price?: number
+  current_value?: number
+  value_change_percent?: number
+  value_status: ValueStatus
+  status_label: string
+  status_color: string
+  created_at: string
+}
+
+export interface ValueHistoryItem {
+  id: number
+  record_date: string
+  estimated_value: number
+  value_change?: number
+  change_percent?: number
+  source?: string
+}
+
+export interface BrandHealthData {
+  brand: string
+  total: number
+  healthy: number
+  warning: number
+  danger: number
+  avg_change: number
+  health_score: number
+}
+
 export interface StatsData {
   total_bags: number
   total_brands: number
@@ -175,4 +263,10 @@ export interface StatsData {
   avg_sell_cycle: number
   avg_price_reduction: number
   platform_revenue_distribution: { platform: string; amount: number }[]
+  monitored_bags_count: number
+  alert_bags_count: number
+  avg_hold_return_rate: number
+  suggest_sell_count: number
+  brand_health: BrandHealthData[]
+  value_trend_30d: { date: string; total_value: number; count: number }[]
 }

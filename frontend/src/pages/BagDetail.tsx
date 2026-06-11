@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle, Store } from 'lucide-react'
-import { bagAPI, authAPI, maintenanceAPI, appraisalAPI, consignmentAPI } from '../api'
-import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus, ConsignmentOrderDetail, ConsignmentStatus } from '../types'
+import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle, Store, TrendingUp, Settings, BarChart3 } from 'lucide-react'
+import { bagAPI, authAPI, maintenanceAPI, appraisalAPI, consignmentAPI, valueMonitorAPI } from '../api'
+import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus, ConsignmentOrderDetail, ConsignmentStatus, ValueMonitor, ValueAnalysis } from '../types'
 import BagModal from '../components/BagModal'
 import MaintenanceModal from '../components/MaintenanceModal'
 import AppraisalModal from '../components/AppraisalModal'
 import ConsignmentModal from '../components/ConsignmentModal'
+import ValueMonitorModal from '../components/ValueMonitorModal'
 
 const STATUS_MAP: Record<AppraisalStatus, { label: string; color: string; bg: string; icon: any }> = {
   pending_submit: { label: '待提交', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
@@ -25,6 +26,16 @@ const CONSIGNMENT_STATUS_MAP: Record<ConsignmentStatus, { label: string; color: 
   delisted: { label: '已下架', color: 'text-red-500', bg: 'bg-red-100', icon: XCircle },
 }
 
+const STATUS_COLOR_MAP: Record<string, { bg: string; text: string; border: string }> = {
+  green: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200' },
+  blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
+  yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600', border: 'border-yellow-200' },
+  orange: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' },
+  red: { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200' },
+  purple: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200' },
+  gray: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200' },
+}
+
 export default function BagDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -34,11 +45,14 @@ export default function BagDetail() {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
   const [showAppraisalModal, setShowAppraisalModal] = useState(false)
   const [showConsignmentModal, setShowConsignmentModal] = useState(false)
+  const [showValueMonitorModal, setShowValueMonitorModal] = useState(false)
   const [authResult, setAuthResult] = useState<AuthResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [appraisalOrders, setAppraisalOrders] = useState<AppraisalOrderDetail[]>([])
   const [consignmentOrders, setConsignmentOrders] = useState<ConsignmentOrderDetail[]>([])
-  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal' | 'consignment'>('info')
+  const [valueMonitor, setValueMonitor] = useState<ValueMonitor | null>(null)
+  const [valueAnalysis, setValueAnalysis] = useState<ValueAnalysis | null>(null)
+  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal' | 'consignment' | 'value'>('info')
 
   const loadBag = async () => {
     if (!id) return
@@ -73,10 +87,32 @@ export default function BagDetail() {
     }
   }
 
+  const loadValueMonitor = async () => {
+    if (!id) return
+    try {
+      const res = await valueMonitorAPI.getMonitorByBag(Number(id))
+      setValueMonitor(res.data)
+    } catch (error) {
+      console.error('加载保值监控失败', error)
+    }
+  }
+
+  const loadValueAnalysis = async () => {
+    if (!id) return
+    try {
+      const res = await valueMonitorAPI.getAnalysis(Number(id))
+      setValueAnalysis(res.data)
+    } catch (error) {
+      console.error('加载保值分析失败', error)
+    }
+  }
+
   useEffect(() => {
     loadBag()
     loadAppraisalOrders()
     loadConsignmentOrders()
+    loadValueMonitor()
+    loadValueAnalysis()
   }, [id])
 
   const handleDelete = async () => {
@@ -172,13 +208,14 @@ export default function BagDetail() {
         </button>
       </div>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-1 mb-6 border-b border-gray-200 flex-wrap">
         {[
           { key: 'info', label: '基本信息', icon: FileText },
           { key: 'auth', label: '鉴定记录', icon: ShieldCheck },
           { key: 'appraisal', label: '鉴定委托', icon: FileBadge },
           { key: 'consignment', label: '寄售管理', icon: Store },
           { key: 'maintenance', label: '保养记录', icon: Wrench },
+          { key: 'value', label: '保值监控', icon: TrendingUp },
         ].map((tab) => {
           const Icon = tab.icon
           return (
@@ -633,6 +670,150 @@ export default function BagDetail() {
         </div>
       )}
 
+      {activeTab === 'value' && bag && (
+        <div className="space-y-6">
+          {!valueMonitor ? (
+            <div className="bg-white rounded-xl p-12 text-center card-shadow">
+              <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm mb-4">暂未开启保值监控</p>
+              <p className="text-xs text-gray-400 mb-6">
+                开启保值监控后，系统将自动追踪包包价值变化，在达到止损价或目标价时提醒您
+              </p>
+              <button
+                onClick={() => setShowValueMonitorModal(true)}
+                className="px-6 py-2.5 luxury-gradient text-white rounded-lg text-sm hover:opacity-90"
+              >
+                开启保值监控
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
+                    valueMonitor.is_active === 1 ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      valueMonitor.is_active === 1 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                    }`} />
+                    {valueMonitor.is_active === 1 ? '监控中' : '已暂停'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowValueMonitorModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
+                  >
+                    <Settings className="w-4 h-4" />
+                    监控设置
+                  </button>
+                  <button
+                    onClick={() => navigate(`/value-analysis/${bag.id}`)}
+                    className="flex items-center gap-2 px-4 py-2 luxury-gradient text-white rounded-lg text-sm hover:opacity-90"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    查看分析
+                  </button>
+                </div>
+              </div>
+
+              {valueAnalysis && (
+                <div className="bg-white rounded-xl p-6 card-shadow">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-semibold text-lg">保值状态</h3>
+                    <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+                      STATUS_COLOR_MAP[valueAnalysis.status_color]?.bg || 'bg-gray-100'
+                    } ${STATUS_COLOR_MAP[valueAnalysis.status_color]?.text || 'text-gray-600'}`}>
+                      {valueAnalysis.status_label}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 bg-luxury-cream rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">购入价格</p>
+                      <p className="text-lg font-bold text-gray-800">
+                        {valueAnalysis.purchase_price ? `¥${valueAnalysis.purchase_price.toLocaleString()}` : '-'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-luxury-cream rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">当前估值</p>
+                      <p className="text-lg font-bold text-luxury-gold">
+                        {valueAnalysis.current_value ? `¥${valueAnalysis.current_value.toLocaleString()}` : '-'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-luxury-cream rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">价值变动</p>
+                      <p className={`text-lg font-bold ${
+                        valueAnalysis.value_change_percent != null && valueAnalysis.value_change_percent >= 0
+                          ? 'text-green-600'
+                          : valueAnalysis.value_change_percent != null
+                            ? 'text-red-500'
+                            : 'text-gray-400'
+                      }`}>
+                        {valueAnalysis.value_change_percent != null
+                          ? `${valueAnalysis.value_change_percent >= 0 ? '+' : ''}${valueAnalysis.value_change_percent}%`
+                          : '-'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-luxury-cream rounded-xl">
+                      <p className="text-xs text-gray-500 mb-1">持有天数</p>
+                      <p className="text-lg font-bold text-gray-800">
+                        {valueAnalysis.hold_days} 天
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-gray-700">换手建议</h4>
+                    {valueAnalysis.suggestions.map((s, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                        <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
+                          valueAnalysis.status_color === 'green' ? 'bg-green-500' :
+                          valueAnalysis.status_color === 'red' ? 'bg-red-500' :
+                          valueAnalysis.status_color === 'yellow' ? 'bg-yellow-500' :
+                          'bg-blue-500'
+                        }`} />
+                        <span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl p-6 card-shadow">
+                <h3 className="font-semibold mb-4">监控参数</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">止损价</span>
+                    <span className="text-red-500 font-medium">
+                      {valueMonitor.stop_loss_price ? `¥${valueMonitor.stop_loss_price.toLocaleString()}` : '未设置'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">目标价</span>
+                    <span className="text-green-600 font-medium">
+                      {valueMonitor.target_sell_price ? `¥${valueMonitor.target_sell_price.toLocaleString()}` : '未设置'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">计划持有</span>
+                    <span className="text-gray-800 font-medium">
+                      {valueMonitor.planned_hold_months ? `${valueMonitor.planned_hold_months} 个月` : '未设置'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-500">关注平台</span>
+                    <span className="text-gray-800 font-medium">
+                      {valueMonitor.follow_platforms || '未设置'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {showEditModal && (
         <BagModal
           initialData={bag}
@@ -678,6 +859,21 @@ export default function BagDetail() {
             loadConsignmentOrders()
             alert('寄售单已创建')
             navigate(`/consignments/${orderId}`)
+          }}
+        />
+      )}
+
+      {showValueMonitorModal && bag && (
+        <ValueMonitorModal
+          bagId={Number(id)}
+          bag={bag}
+          existingMonitor={valueMonitor}
+          onClose={() => setShowValueMonitorModal(false)}
+          onSuccess={(monitor) => {
+            setShowValueMonitorModal(false)
+            setValueMonitor(monitor)
+            loadValueAnalysis()
+            alert(valueMonitor ? '监控设置已更新' : '保值监控已开启')
           }}
         />
       )}

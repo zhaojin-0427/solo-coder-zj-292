@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert, Store, Percent, Calendar, ArrowDownToLine } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert, Store, Percent, Calendar, ArrowDownToLine, Bell, Target, HeartPulse, TrendingDown } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, LineChart, Line
@@ -37,23 +38,23 @@ export default function Statistics() {
     return <div className="text-center py-12 text-gray-500">暂无数据</div>
   }
 
-  const pieData = stats.brand_distribution.map(b => ({
+  const pieData = (stats.brand_distribution || []).map(b => ({
     name: b.brand,
     value: b.count
   }))
 
-  const barData = stats.maintenance_cost_by_type.map(t => ({
+  const barData = (stats.maintenance_cost_by_type || []).map(t => ({
     name: t.type,
     费用: t.total_cost,
     次数: t.count
   }))
 
-  const lineData = stats.value_retention_period.map(v => ({
+  const lineData = (stats.value_retention_period || []).map(v => ({
     name: v.period,
     平均保值率: v.avg_retention
   }))
 
-  const problemData = stats.common_problem_parts.map(p => ({
+  const problemData = (stats.common_problem_parts || []).map(p => ({
     name: p.part,
     count: p.count
   }))
@@ -547,6 +548,185 @@ export default function Statistics() {
           </div>
         </div>
       )}
+
+      <div className="mb-6 mt-8">
+        <h3 className="text-xl font-bold text-luxury-black flex items-center gap-3 mb-4">
+          <TrendingUp className="w-6 h-6 text-luxury-gold" />
+          保值监控统计
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-luxury-gold">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">监控中包包</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.monitored_bags_count}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+              <HeartPulse className="w-6 h-6 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            开启保值监控的包包数量
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-red-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">触发预警数</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.alert_bags_count}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+              <Bell className="w-6 h-6 text-red-500" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            需要关注的预警包包数
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">平均持有收益率</p>
+              <p className={`text-2xl font-bold mt-1 ${
+                stats.avg_hold_return_rate >= 0 ? 'text-green-600' : 'text-red-500'
+              }`}>
+                {stats.avg_hold_return_rate >= 0 ? '+' : ''}{stats.avg_hold_return_rate}%
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            监控包包的平均收益
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-orange-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">建议换手数</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.suggest_sell_count}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <Target className="w-6 h-6 text-orange-500" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            达到卖出条件的包包数
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {(stats.brand_health || []).length > 0 && (
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <HeartPulse className="w-5 h-5 text-rose-500" />
+              各品牌保值健康度
+            </h3>
+            <div className="space-y-4">
+              {(stats.brand_health || []).slice(0, 6).map((brand, index) => (
+                <div key={brand.brand}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white font-medium ${
+                        index === 0 ? 'bg-green-500' :
+                        index === 1 ? 'bg-emerald-500' :
+                        index === 2 ? 'bg-yellow-500' :
+                        index === 3 ? 'bg-orange-500' :
+                        'bg-gray-400'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      {brand.brand}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {brand.total} 件
+                      </span>
+                      <span className={`text-sm font-bold ${
+                        brand.health_score >= 80 ? 'text-green-600' :
+                        brand.health_score >= 60 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        健康度 {brand.health_score}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        brand.health_score >= 80 ? 'bg-gradient-to-r from-green-400 to-green-600' :
+                        brand.health_score >= 60 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                        'bg-gradient-to-r from-red-400 to-red-500'
+                      }`}
+                      style={{ width: `${Math.max(brand.health_score, 5)}%` }}
+                    />
+                  </div>
+                  <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
+                    <span className="text-green-600">健康 {brand.healthy}件</span>
+                    <span className="text-yellow-600">关注 {brand.warning}件</span>
+                    <span className="text-red-600">预警 {brand.danger}件</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(stats.value_trend_30d || []).length > 0 && (
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-luxury-gold" />
+              近30天价值波动趋势
+            </h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.value_trend_30d || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} interval={5} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `¥${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(value: number) => [`¥${value.toLocaleString()}`, '总估值']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="total_value"
+                    stroke="#C9A962"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 5, fill: '#C9A962' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              监控包包的总估值走势
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end mb-6">
+        <Link
+          to="/value-alerts"
+          className="inline-flex items-center gap-2 px-5 py-2.5 luxury-gradient text-white rounded-lg text-sm hover:opacity-90 transition-opacity"
+        >
+          <Bell className="w-4 h-4" />
+          查看全部保值预警
+        </Link>
+      </div>
 
       <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
         <p className="text-sm text-blue-800">

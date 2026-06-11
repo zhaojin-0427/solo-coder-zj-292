@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from database import engine, Base
-from routes import bags, authentication, maintenance, stats, appraisals, consignments
+from routes import bags, authentication, maintenance, stats, appraisals, consignments, value_monitor
 
 Base.metadata.create_all(bind=engine)
 
@@ -28,6 +28,7 @@ app.include_router(maintenance.router)
 app.include_router(stats.router)
 app.include_router(appraisals.router)
 app.include_router(consignments.router)
+app.include_router(value_monitor.router)
 
 
 @app.get("/api/health")

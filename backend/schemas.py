@@ -286,3 +286,77 @@ class ConsignmentOrderResponse(BaseModel):
 class ConsignmentOrderDetailResponse(ConsignmentOrderResponse):
     bag_brand: Optional[str] = None
     bag_model: Optional[str] = None
+
+
+class ValueMonitorBase(BaseModel):
+    stop_loss_price: Optional[float] = None
+    target_sell_price: Optional[float] = None
+    planned_hold_months: Optional[int] = None
+    follow_platforms: Optional[str] = None
+
+
+class ValueMonitorCreate(ValueMonitorBase):
+    bag_id: int
+
+
+class ValueMonitorUpdate(ValueMonitorBase):
+    is_active: Optional[int] = None
+
+
+class ValueMonitorResponse(ValueMonitorBase):
+    id: int
+    bag_id: int
+    is_active: int
+    last_analyzed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ValueAnalysisResponse(BaseModel):
+    bag_id: int
+    bag_brand: str
+    bag_model: str
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    value_change: Optional[float] = None
+    value_change_percent: Optional[float] = None
+    total_maintenance_cost: float
+    net_profit: Optional[float] = None
+    profit_rate: Optional[float] = None
+    hold_days: int
+    value_status: str
+    status_label: str
+    status_color: str
+    suggestions: List[str]
+    stop_loss_price: Optional[float] = None
+    target_sell_price: Optional[float] = None
+    planned_hold_months: Optional[int] = None
+    is_stop_loss_triggered: bool
+    is_target_reached: bool
+    market_price_trend: Optional[str] = None
+    auth_risk_level: Optional[str] = None
+    consignment_sold_count: int
+    avg_sell_cycle: Optional[float] = None
+
+
+class ValueAlertItem(BaseModel):
+    bag_id: int
+    bag_brand: str
+    bag_model: str
+    alert_type: str
+    alert_level: str
+    current_value: Optional[float] = None
+    threshold_value: Optional[float] = None
+    message: str
+
+
+class ValueStatsResponse(BaseModel):
+    monitored_bags_count: int
+    alert_bags_count: int
+    avg_hold_return_rate: float
+    suggest_sell_count: int
+    brand_health: List[dict]
+    value_trend_30d: List[dict]
