@@ -6,6 +6,8 @@ import AuthGuide from './pages/AuthGuide'
 import Maintenance from './pages/Maintenance'
 import Market from './pages/Market'
 import Statistics from './pages/Statistics'
+import AppraisalList from './pages/AppraisalList'
+import AppraisalDetail from './pages/AppraisalDetail'
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path="/maintenance" element={<Maintenance />} />
         <Route path="/market" element={<Market />} />
         <Route path="/stats" element={<Statistics />} />
+        <Route path="/appraisals" element={<AppraisalList />} />
+        <Route path="/appraisals/:id" element={<AppraisalDetail />} />
       </Routes>
     </Layout>
   )

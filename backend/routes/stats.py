@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import func
 
 from database import get_db
-from models import Bag, MaintenanceRecord, BrandFeature, MarketPrice
+from models import Bag, MaintenanceRecord, BrandFeature, MarketPrice, AppraisalOrder
 
 router = APIRouter(prefix="/api", tags=["行情与统计"])
 
@@ -71,6 +71,56 @@ def get_stats(db: Session = Depends(get_db)):
         {"period": "5年以上", "avg_retention": 52.1},
     ]
 
+    total_appraisal_orders = db.query(func.count(AppraisalOrder.id)).scalar() or 0
+
+    reported_orders = db.query(AppraisalOrder).filter(
+        AppraisalOrder.status == "reported",
+        AppraisalOrder.submitted_at.isnot(None),
+        AppraisalOrder.reported_at.isnot(None)
+    ).all()
+    avg_report_days = 0.0
+    if reported_orders:
+        total_days = 0
+        for o in reported_orders:
+            delta = o.reported_at - o.submitted_at
+            total_days += delta.total_seconds() / 86400
+        avg_report_days = round(total_days / len(reported_orders), 1)
+
+    risk_query = db.query(
+        Bag.brand,
+        func.count(AppraisalOrder.id),
+        func.sum(func.IIF(AppraisalOrder.risk_flag == "high", 1, 0)),
+        func.sum(func.IIF(AppraisalOrder.risk_flag == "medium", 1, 0)),
+        func.sum(func.IIF(AppraisalOrder.risk_flag == "low", 1, 0)),
+    ).join(AppraisalOrder, AppraisalOrder.bag_id == Bag.id) \
+     .filter(AppraisalOrder.status == "reported") \
+     .group_by(Bag.brand).all()
+
+    brand_risk_distribution = []
+    for r in risk_query:
+        brand, total, high, medium, low = r
+        high = high or 0
+        medium = medium or 0
+        low = low or 0
+        total_count = total or 1
+        high_ratio = round(high / total_count * 100, 1)
+        medium_ratio = round(medium / total_count * 100, 1)
+        low_ratio = round(low / total_count * 100, 1)
+        brand_risk_distribution.append({
+            "brand": brand,
+            "total": total or 0,
+            "high_count": high,
+            "medium_count": medium,
+            "low_count": low,
+            "high_ratio": high_ratio,
+            "medium_ratio": medium_ratio,
+            "low_ratio": low_ratio,
+            "risk_ratio": round((high + medium * 0.5) / total_count * 100, 1)
+        })
+    brand_risk_distribution = sorted(
+        brand_risk_distribution, key=lambda x: x["risk_ratio"], reverse=True
+    )
+
     return {
         "total_bags": total_bags,
         "total_brands": total_brands,
@@ -82,4 +132,7 @@ def get_stats(db: Session = Depends(get_db)):
         "maintenance_cost_by_type": maintenance_cost_by_type,
         "common_problem_parts": common_parts,
         "value_retention_period": value_retention,
+        "total_appraisal_orders": total_appraisal_orders,
+        "avg_report_days": avg_report_days,
+        "brand_risk_distribution": brand_risk_distribution,
     }

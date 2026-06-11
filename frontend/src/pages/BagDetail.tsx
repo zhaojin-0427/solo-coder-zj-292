@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus } from 'lucide-react'
-import { bagAPI, authAPI, maintenanceAPI } from '../api'
-import { BagDetail as BagDetailType, AuthResult } from '../types'
+import { ArrowLeft, Edit3, Trash2, Upload, Camera, ShieldCheck, Wrench, FileText, Plus, FileBadge, Clock, CheckCircle2, AlertCircle, Eye, XCircle } from 'lucide-react'
+import { bagAPI, authAPI, maintenanceAPI, appraisalAPI } from '../api'
+import { BagDetail as BagDetailType, AuthResult, AppraisalOrderDetail, AppraisalStatus } from '../types'
 import BagModal from '../components/BagModal'
 import MaintenanceModal from '../components/MaintenanceModal'
+import AppraisalModal from '../components/AppraisalModal'
+
+const STATUS_MAP: Record<AppraisalStatus, { label: string; color: string; bg: string; icon: any }> = {
+  pending_submit: { label: '待提交', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
+  pending_accept: { label: '待受理', color: 'text-blue-600', bg: 'bg-blue-100', icon: Clock },
+  appraising: { label: '鉴定中', color: 'text-orange-600', bg: 'bg-orange-100', icon: Eye },
+  reported: { label: '已出报告', color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
+  cancelled: { label: '已取消', color: 'text-red-500', bg: 'bg-red-100', icon: XCircle },
+}
 
 export default function BagDetail() {
   const { id } = useParams<{ id: string }>()
@@ -13,9 +22,11 @@ export default function BagDetail() {
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+  const [showAppraisalModal, setShowAppraisalModal] = useState(false)
   const [authResult, setAuthResult] = useState<AuthResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance'>('info')
+  const [appraisalOrders, setAppraisalOrders] = useState<AppraisalOrderDetail[]>([])
+  const [activeTab, setActiveTab] = useState<'info' | 'auth' | 'maintenance' | 'appraisal'>('info')
 
   const loadBag = async () => {
     if (!id) return
@@ -30,8 +41,19 @@ export default function BagDetail() {
     }
   }
 
+  const loadAppraisalOrders = async () => {
+    if (!id) return
+    try {
+      const res = await appraisalAPI.getOrders({ bag_id: Number(id) })
+      setAppraisalOrders(res.data)
+    } catch (error) {
+      console.error('加载委托记录失败', error)
+    }
+  }
+
   useEffect(() => {
     loadBag()
+    loadAppraisalOrders()
   }, [id])
 
   const handleDelete = async () => {
@@ -131,6 +153,7 @@ export default function BagDetail() {
         {[
           { key: 'info', label: '基本信息', icon: FileText },
           { key: 'auth', label: '鉴定记录', icon: ShieldCheck },
+          { key: 'appraisal', label: '鉴定委托', icon: FileBadge },
           { key: 'maintenance', label: '保养记录', icon: Wrench },
         ].map((tab) => {
           const Icon = tab.icon
@@ -404,6 +427,102 @@ export default function BagDetail() {
         </div>
       )}
 
+      {activeTab === 'appraisal' && bag && (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowAppraisalModal(true)}
+              className="flex items-center gap-2 px-4 py-2 luxury-gradient text-white rounded-lg text-sm hover:opacity-90"
+            >
+              <Plus className="w-4 h-4" />
+              发起鉴定委托
+            </button>
+          </div>
+
+          {appraisalOrders.length === 0 ? (
+            <div className="bg-white rounded-xl p-12 text-center card-shadow">
+              <FileBadge className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm mb-4">暂无鉴定委托记录</p>
+              <p className="text-xs text-gray-400 mb-4">
+                一键发起第三方专业鉴定，基于已上传的购买凭证、五金刻字、内标走线、防尘袋烫金照片
+              </p>
+              <button
+                onClick={() => setShowAppraisalModal(true)}
+                className="px-4 py-2 text-sm text-luxury-gold border border-luxury-gold rounded-lg hover:bg-luxury-gold hover:text-white transition-colors"
+              >
+                立即发起委托
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {appraisalOrders.map((order) => {
+                const statusInfo = STATUS_MAP[order.status]
+                const StatusIcon = statusInfo.icon
+                return (
+                  <div
+                    key={order.id}
+                    className="bg-white rounded-xl p-4 card-shadow cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/appraisals/${order.id}`)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 ${statusInfo.bg} rounded-full flex items-center justify-center`}>
+                          <StatusIcon className={`w-5 h-5 ${statusInfo.color}`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{order.order_no}</p>
+                            {order.is_urgent === 1 && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded">加急</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            期望机构：{order.expected_agency || '未指定'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusInfo.label}
+                        </span>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {order.created_at.slice(0, 16).replace('T', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                    {order.status === 'reported' && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-500">鉴定机构：</span>
+                          <span className="text-gray-800">{order.report_agency || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">鉴定结论：</span>
+                          <span className={`font-medium ${
+                            order.report_score && order.report_score >= 80 ? 'text-green-600' :
+                            order.report_score && order.report_score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>{order.report_conclusion || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">鉴定评分：</span>
+                          <span className="font-medium text-luxury-gold">{order.report_score ?? '-'}</span>
+                        </div>
+                      </div>
+                    )}
+                    {(order.status === 'pending_submit' || order.status === 'pending_accept') && order.contact_name && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                        联系人：{order.contact_name} {order.contact_phone}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {showEditModal && (
         <BagModal
           initialData={bag}
@@ -422,6 +541,19 @@ export default function BagDetail() {
           onSuccess={() => {
             setShowMaintenanceModal(false)
             loadBag()
+          }}
+        />
+      )}
+
+      {showAppraisalModal && bag && (
+        <AppraisalModal
+          bag={bag}
+          onClose={() => setShowAppraisalModal(false)}
+          onSuccess={(orderId) => {
+            setShowAppraisalModal(false)
+            loadAppraisalOrders()
+            alert('委托申请已创建，可在委托详情中提交')
+            navigate(`/appraisals/${orderId}`)
           }}
         />
       )}

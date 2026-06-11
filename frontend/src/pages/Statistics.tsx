@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon } from 'lucide-react'
+import { BarChart3, Package, DollarSign, TrendingUp, AlertTriangle, PieChart as PieChartIcon, FileBadge, Clock, ShieldAlert } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, LineChart, Line
@@ -79,7 +79,7 @@ export default function Statistics() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-5 card-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -113,23 +113,6 @@ export default function Statistics() {
         <div className="bg-white rounded-xl p-5 card-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">保养成本占比</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">
-                {stats.maintenance_cost_ratio || 0}%
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <PieChartIcon className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-3">
-            购入总价 ¥{stats.total_purchase_price.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 card-shadow">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm text-gray-500">平均保值率</p>
               <p className="text-2xl font-bold text-gray-800 mt-1">
                 {stats.avg_retention_rate || '--'}%
@@ -140,6 +123,58 @@ export default function Statistics() {
             </div>
           </div>
           <p className="text-xs text-gray-400 mt-3">基于当前估值计算</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-luxury-gold">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">鉴定委托次数</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.total_appraisal_orders}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+              <FileBadge className="w-6 h-6 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">第三方专业鉴定委托总量</p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-indigo-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">平均出报告时长</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.avg_report_days || '--'} <span className="text-base font-normal text-gray-500">天</span>
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+              <Clock className="w-6 h-6 text-indigo-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            {stats.avg_report_days <= 3 ? '效率优秀 ⚡' :
+             stats.avg_report_days <= 5 ? '效率正常' : '建议选择加急服务'}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 card-shadow border-l-4 border-rose-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">疑似风险品牌数</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">
+                {stats.brand_risk_distribution.filter(b => b.risk_ratio > 0).length}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
+              <ShieldAlert className="w-6 h-6 text-rose-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">
+            共检测 {stats.brand_risk_distribution.length} 个品牌鉴定结果
+          </p>
         </div>
       </div>
 
@@ -281,6 +316,88 @@ export default function Statistics() {
           </div>
         </div>
       </div>
+
+      {stats.brand_risk_distribution.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-rose-500" />
+              各品牌疑似风险占比
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.brand_risk_distribution} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis type="number" tick={{ fontSize: 12 }} unit="%" />
+                <YAxis dataKey="brand" type="category" tick={{ fontSize: 12 }} width={80} />
+                <Tooltip formatter={(value: number, name: string) => [`${value}%`, name]} />
+                <Legend />
+                <Bar dataKey="high_ratio" name="高风险" fill="#F43F5E" radius={[0, 4, 4, 0]} stackId="a" />
+                <Bar dataKey="medium_ratio" name="中风险" fill="#F59E0B" radius={[0, 0, 0, 0]} stackId="a" />
+                <Bar dataKey="low_ratio" name="低风险" fill="#10B981" radius={[4, 0, 0, 4]} stackId="a" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 card-shadow">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              品牌风险排行榜
+            </h3>
+            <div className="space-y-4">
+              {stats.brand_risk_distribution.slice(0, 6).map((brand, index) => (
+                <div key={brand.brand}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white font-medium ${
+                        index === 0 ? 'bg-red-500' :
+                        index === 1 ? 'bg-orange-500' :
+                        index === 2 ? 'bg-amber-500' : 'bg-gray-400'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      {brand.brand}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        样本 {brand.total} 件
+                      </span>
+                      <span className={`text-sm font-bold ${
+                        brand.risk_ratio >= 50 ? 'text-red-600' :
+                        brand.risk_ratio >= 25 ? 'text-orange-600' :
+                        brand.risk_ratio > 0 ? 'text-amber-600' : 'text-green-600'
+                      }`}>
+                        风险值 {brand.risk_ratio}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        brand.risk_ratio >= 50 ? 'bg-gradient-to-r from-red-400 to-red-600' :
+                        brand.risk_ratio >= 25 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                        brand.risk_ratio > 0 ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                        'bg-gradient-to-r from-green-400 to-green-500'
+                      }`}
+                      style={{ width: `${Math.max(brand.risk_ratio, 2)}%` }}
+                    />
+                  </div>
+                  <div className="flex gap-3 mt-1.5 text-xs text-gray-500">
+                    {brand.high_count > 0 && (
+                      <span className="text-red-600">高风险 {brand.high_count}件</span>
+                    )}
+                    {brand.medium_count > 0 && (
+                      <span className="text-orange-600">中风险 {brand.medium_count}件</span>
+                    )}
+                    {brand.low_count > 0 && (
+                      <span className="text-green-600">低风险 {brand.low_count}件</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
         <p className="text-sm text-blue-800">

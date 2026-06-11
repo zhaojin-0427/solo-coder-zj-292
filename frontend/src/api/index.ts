@@ -54,4 +54,38 @@ export const statsAPI = {
   getMarketPrices: (brand?: string) => api.get('/market-prices', { params: { brand } }),
 }
 
+export const appraisalAPI = {
+  getOrders: (params?: { bag_id?: number; status?: string }) =>
+    api.get('/appraisals', { params }),
+  getOrder: (id: number) => api.get(`/appraisals/${id}`),
+  createOrder: (data: {
+    bag_id: number
+    expected_agency?: string
+    is_urgent?: number
+    contact_name?: string
+    contact_phone?: string
+    contact_remark?: string
+    purchase_proof_refs?: string
+    auth_image_refs?: string
+  }) => api.post('/appraisals', data),
+  updateOrder: (id: number, data: {
+    expected_agency?: string
+    is_urgent?: number
+    contact_name?: string
+    contact_phone?: string
+    contact_remark?: string
+  }) => api.put(`/appraisals/${id}`, data),
+  updateStatus: (id: number, data: {
+    status: string
+    report_id?: string
+    report_agency?: string
+    report_conclusion?: string
+    report_score?: number
+    report_details?: string
+    report_pdf_path?: string
+    risk_flag?: string
+  }) => api.patch(`/appraisals/${id}/status`, data),
+  deleteOrder: (id: number) => api.delete(`/appraisals/${id}`),
+}
+
 export default api

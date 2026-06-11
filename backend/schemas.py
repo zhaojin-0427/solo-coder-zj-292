@@ -147,3 +147,71 @@ class StatsResponse(BaseModel):
     maintenance_cost_by_type: List[dict]
     common_problem_parts: List[dict]
     value_retention_period: List[dict]
+    total_appraisal_orders: int
+    avg_report_days: float
+    brand_risk_distribution: List[dict]
+
+
+class AppraisalOrderCreate(BaseModel):
+    bag_id: int
+    expected_agency: Optional[str] = None
+    is_urgent: Optional[int] = 0
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_remark: Optional[str] = None
+    purchase_proof_refs: Optional[str] = None
+    auth_image_refs: Optional[str] = None
+
+
+class AppraisalOrderUpdate(BaseModel):
+    expected_agency: Optional[str] = None
+    is_urgent: Optional[int] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_remark: Optional[str] = None
+
+
+class AppraisalOrderStatusUpdate(BaseModel):
+    status: str
+    report_id: Optional[str] = None
+    report_agency: Optional[str] = None
+    report_conclusion: Optional[str] = None
+    report_score: Optional[float] = None
+    report_details: Optional[str] = None
+    report_pdf_path: Optional[str] = None
+    risk_flag: Optional[str] = None
+
+
+class AppraisalOrderResponse(BaseModel):
+    id: int
+    bag_id: int
+    order_no: str
+    status: str
+    expected_agency: Optional[str] = None
+    is_urgent: int = 0
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_remark: Optional[str] = None
+    purchase_proof_refs: Optional[str] = None
+    auth_image_refs: Optional[str] = None
+    report_id: Optional[str] = None
+    report_agency: Optional[str] = None
+    report_conclusion: Optional[str] = None
+    report_score: Optional[float] = None
+    report_details: Optional[str] = None
+    report_pdf_path: Optional[str] = None
+    risk_flag: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    accepted_at: Optional[datetime] = None
+    appraising_at: Optional[datetime] = None
+    reported_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AppraisalOrderDetailResponse(AppraisalOrderResponse):
+    bag_brand: Optional[str] = None
+    bag_model: Optional[str] = None

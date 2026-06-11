@@ -67,6 +67,37 @@ class AuthenticationResult(Base):
     bag = relationship("Bag", back_populates="authentication_results")
 
 
+class AppraisalOrder(Base):
+    __tablename__ = "appraisal_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bag_id = Column(Integer, ForeignKey("bags.id"), nullable=False)
+    order_no = Column(String(50), unique=True, nullable=False)
+    status = Column(String(20), nullable=False, default="pending_submit")
+    expected_agency = Column(String(200))
+    is_urgent = Column(Integer, default=0)
+    contact_name = Column(String(100))
+    contact_phone = Column(String(50))
+    contact_remark = Column(Text)
+    purchase_proof_refs = Column(Text)
+    auth_image_refs = Column(Text)
+    report_id = Column(String(100))
+    report_agency = Column(String(200))
+    report_conclusion = Column(String(50))
+    report_score = Column(Float)
+    report_details = Column(Text)
+    report_pdf_path = Column(String(500))
+    risk_flag = Column(String(20))
+    submitted_at = Column(DateTime)
+    accepted_at = Column(DateTime)
+    appraising_at = Column(DateTime)
+    reported_at = Column(DateTime)
+    cancelled_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    bag = relationship("Bag")
+
+
 class MaintenanceRecord(Base):
     __tablename__ = "maintenance_records"
 
